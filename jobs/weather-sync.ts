@@ -21,15 +21,15 @@ async function syncWeather() {
 
   for (const loc of LOCATIONS) {
     try {
-      const url = `https://api.openweathermap.org/data/3.0/onecall?lat=${loc.lat}&lon=${loc.lon}&exclude=minutely,alerts&units=metric&appid=${APP_ID}`;
+      const url = `https://api.openweathermap.org/data/2.5/weather?lat=${loc.lat}&lon=${loc.lon}&units=metric&appid=${APP_ID}`;
 
       const response = await fetch(url);
       if (!response.ok) {
-        throw new ExternalAPIError(`OpenWeather API failed ${response.status}`);
+        const errorText = await response.text();
+        throw new ExternalAPIError(`OpenWeather API failed ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();
-      const current = data.current;
 
       // Upsert/Insert into weather_snapshots
       await query(
@@ -40,13 +40,13 @@ async function syncWeather() {
       `,
         [
           loc.id,
-          current.dt,
-          current.temp,
-          current.humidity,
-          current.pressure,
-          current.wind_speed,
-          current.uvi,
-          current.weather[0]?.main || "Unknown",
+          data.dt,
+          data.main.temp,
+          data.main.humidity,
+          data.main.pressure,
+          data.wind.speed,
+          0, // La API 2.5 no trae Índice UV en este endpoint, enviamos 0 por defecto
+          data.weather[0]?.main || "Unknown",
         ],
       );
 
