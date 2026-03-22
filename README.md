@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# World Status - Dashboard Global
 
-## Getting Started
+![World Status Dashboard](https://img.shields.io/badge/World_Status-000000?style=for-the-badge&logo=Next.js&logoColor=white)
 
-First, run the development server:
+Un dashboard global de alto rendimiento construido con **Next.js (App Router)**, **PostgreSQL** y **Redis**.
+Compila información del mundo en las últimas 24 horas: clima, desastres naturales (filtrados de noticias), noticias globales, índices financieros y astronomía.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Stack Tecnológico
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Frontend:** Next.js (App Router), React, Tailwind CSS, Leaflet (Mapas), Chart.js
+- **Backend (API):** Next.js Route Handlers
+- **Base de datos:** PostgreSQL (Queries en SQL crudo con `pg`)
+- **Caché:** Redis (con `ioredis`)
+- **Background Jobs:** Node.js Cron Scripts (`jobs/*`)
+- **Logging:** Pino (Estructurado)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Estructura del Proyecto
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+\`\`\`text
+world-status/
+├── db/
+│   ├── schema.sql           # Esquina SQL de Inicialización (PostgreSQL)
+├── jobs/
+│   ├── weather-sync.ts      # Cron job de Clima (OpenWeather OneCall)
+│   ├── news-sync.ts         # Cron job de Noticias y Desastres (NewsAPI)
+│   └── astronomy-sync.ts    # Cron job de Astronomía (NASA DONKI y APOD)
+├── src/
+│   ├── app/
+│   │   ├── api/data/...     # Route Handlers (Internal API + Redis Cache)
+│   │   ├── layout.tsx       # Estructura principal y Sidebar
+│   │   ├── page.tsx         # Dashboard / Landing Page Principal
+│   ├── components/          # Componentes Reutilizables (Sidebar, Map, etc.)
+│   ├── lib/
+│   │   ├── db.ts            # Utilidad de cliente PostgreSQL
+│   │   ├── redis.ts         # Utilidad de caché Redis
+│   │   ├── errors.ts        # Jerarquía de Errores
+│   │   └── logger.ts        # Configuración de Pino
+\`\`\`
 
-## Learn More
+## Configuración y Setup para CubePath
 
-To learn more about Next.js, take a look at the following resources:
+1. **Clona el repositorio** e instala dependencias.
+   \`\`\`bash
+   npm install
+   \`\`\`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. **Configura Entorno Local**: Crea un `.env.local` usando las siguientes keys:
+   \`\`\`env
+   DATABASE_URL=postgresql://user:pass@localhost:5432/world_status
+   REDIS_URL=redis://localhost:6379
+   OPENWEATHER_API_KEY=tu_clave
+   NEWS_API_KEY=tu_clave
+   NASA_API_KEY=DEMO_KEY
+   LOG_LEVEL=info
+   \`\`\`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+3. **Inicializa la Base de Datos**:
+   Ejecuta el script SQL en PostgreSQL, por ejemplo usando \`psql\`:
+   \`\`\`bash
+   psql -U tu_usuario -d world_status -f db/schema.sql
+   \`\`\`
 
-## Deploy on Vercel
+4. **Compilar y Ejecutar en Producción**:
+   \`\`\`bash
+   npm run build
+   npm run start
+   \`\`\`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+5. **Configuración de Cron Jobs**:
+   Usa un sistema cron real o \`pm2\` para ejecutar los scripts en Node:
+   \`\`\`bash
+   # Cada 6 horas
+   0 */6 * * * npx ts-node jobs/weather-sync.ts
+   
+   # Cada 30 minutos
+   */30 * * * * npx ts-node jobs/news-sync.ts
+   
+   # Cada 24 horas (Medianoche)
+   0 0 * * * npx ts-node jobs/astronomy-sync.ts
+   \`\`\`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Notas Arquitectónicas
+
+- **Caché First:** Cada endpoint de `/api/data/*` verifica Redis antes de golpear a PostgreSQL. La duración estándar del caché varıa entre 1 hora (para noticias) y 6 horas (para clima y astronomía).
+- **Cero llamadas externas desde el cliente:** El frontend (Next.js components) *jamás* llama a OpenWeather, NASA o NewsAPI directamente. Los fetch los hace el servidor Next.js a su misma base o los scripts \`jobs/\` pre-llenan los datos.
+- **Desastres Naturales:** No usamos APIs de desastres dedicados. El \`news-sync.ts\` filtra noticias con palabras clave (terremoto, huracán, etc.) y las etiqueta como \`category="desastre"\` en la tabla \`news_articles\`.
+
+## SEO y Metadatos
+
+Next.js App Router maneja los metadatos globales en \`layout.tsx\`. Se recomienda implementar [JSON-LD estructurado](https://schema.org) en páginas individuales como \`/disasters/\` para indexación como \`Event\` o \`NewsArticle\`.
