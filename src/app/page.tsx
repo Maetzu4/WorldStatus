@@ -16,57 +16,48 @@ export default function Home() {
           World Status
         </h1>
         <p className="text-lg text-slate-300 max-w-3xl leading-relaxed">
-          Estado del mundo en las últimas 24 horas. Monitoreo en tiempo real de{" "}
-          <span className="text-blue-400 font-medium">clima global</span>,{" "}
-          <span className="text-red-400 font-medium">desastres naturales</span>{" "}
-          registrados,{" "}
-          <span className="text-emerald-400 font-medium">
-            noticias globales
-          </span>
-          ,{" "}
-          <span className="text-yellow-400 font-medium">
-            índices financieros
-          </span>{" "}
-          y{" "}
-          <span className="text-purple-400 font-medium">
-            eventos astronómicos
-          </span>
-          .
+          The state of the world in the last 24 hours. Real-time monitoring of{" "}
+          <span className="text-blue-400 font-medium">global climate</span>,{" "}
+          <span className="text-red-400 font-medium">natural disasters</span>{" "}
+          recorded,{" "}
+          <span className="text-emerald-400 font-medium">global news</span>,{" "}
+          <span className="text-yellow-400 font-medium">market indices</span>,{" "}
+          and <span className="text-purple-400 font-medium">astronomy events</span>.
         </p>
       </header>
 
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         <DashboardCard
-          title="Clima"
-          description="Condiciones y alertas"
+          title="Climate"
+          description="Conditions & alerts"
           href="/climate"
           icon={<CloudRain className="w-8 h-8 text-blue-400" />}
           bgClass="bg-blue-950/20 hover:bg-blue-900/30 border-blue-900/50"
         />
         <DashboardCard
-          title="Desastres"
-          description="Reportes recientes"
+          title="Disasters"
+          description="Recent reports"
           href="/disasters"
           icon={<ShieldAlert className="w-8 h-8 text-red-400" />}
           bgClass="bg-red-950/20 hover:bg-red-900/30 border-red-900/50"
         />
         <DashboardCard
-          title="Noticias"
-          description="Titulares globales"
+          title="News"
+          description="Global headlines"
           href="/news"
           icon={<Newspaper className="w-8 h-8 text-emerald-400" />}
           bgClass="bg-emerald-950/20 hover:bg-emerald-900/30 border-emerald-900/50"
         />
         <DashboardCard
-          title="Finanzas"
-          description="Índices de mercado"
+          title="Finance"
+          description="Market indices"
           href="/finance"
           icon={<TrendingUp className="w-8 h-8 text-yellow-400" />}
           bgClass="bg-yellow-950/20 hover:bg-yellow-900/30 border-yellow-900/50"
         />
         <DashboardCard
-          title="Astronomía"
-          description="Fenómenos y alertas"
+          title="Astronomy"
+          description="Alerts & phenomena"
           href="/astronomy"
           icon={<Moon className="w-8 h-8 text-purple-400" />}
           bgClass="bg-purple-950/20 hover:bg-purple-900/30 border-purple-900/50"
@@ -76,39 +67,39 @@ export default function Home() {
       <section className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 shadow-xl">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">
-            Línea de Tiempo (Últimas 24h)
+            Timeline (Last 24h)
           </h2>
           <span className="text-sm px-3 py-1 bg-slate-800 text-slate-300 rounded-full">
-            Actualización automática
+            Auto-updating
           </span>
         </div>
 
-        {/* En un entorno real, este componente haría fetch a un endpoint agregado o a los 5 endpoints */}
+        {/* In a real environment, this component would fetch from an aggregated endpoint */}
         <div className="space-y-4">
           <TimelineItem
-            category="desastre"
-            title="Sismo Magnitud 6.1 reportado en la costa del Pacífico"
-            time="Hace 1 hora"
+            category="disaster"
+            title="Magnitude 6.1 Earthquake reported on Pacific Coast"
+            time="1 hour ago"
           />
           <TimelineItem
-            category="clima"
-            title="Alerta de huracán elevada a Categoría 3 en el golfo"
-            time="Hace 2 horas"
+            category="climate"
+            title="Hurricane alert raised to Category 3 in the Gulf"
+            time="2 hours ago"
           />
           <TimelineItem
-            category="finanzas"
-            title="El S&P 500 cierra con un alza del 1.2%"
-            time="Hace 4 horas"
+            category="finance"
+            title="S&P 500 closes up 1.2%"
+            time="4 hours ago"
           />
           <TimelineItem
-            category="noticia"
-            title="Cumbre global sobre cambio climático concluye acuerdos importantes"
-            time="Hace 5 horas"
+            category="news"
+            title="Global climate change summit concludes major agreements"
+            time="5 hours ago"
           />
           <TimelineItem
-            category="astronomía"
-            title="Eyección de masa coronal (CME) detectada por NASA DONKI"
-            time="Hace 6 horas"
+            category="astronomy"
+            title="Coronal Mass Ejection (CME) detected by NASA DONKI"
+            time="6 hours ago"
           />
         </div>
       </section>

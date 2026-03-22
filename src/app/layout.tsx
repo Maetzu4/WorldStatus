@@ -6,9 +6,9 @@ import Sidebar from "@/components/Sidebar";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "World Status - Dashboard Global",
+  title: "World Status - Global Dashboard",
   description:
-    "Estado del mundo en las últimas 24 horas: Clima, Desastres Naturales, Noticias Globales, Índices Financieros y Eventos Astronómicos.",
+    "The state of the world in the last 24 hours: Climate, Natural Disasters, Global News, Financial Indices, and Astronomy Events.",
 };
 
 export default function RootLayout({
@@ -17,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es" className="dark">
+    <html lang="en" className="dark">
       <body
         className={`${inter.className} bg-slate-950 text-slate-50 min-h-screen flex`}
       >

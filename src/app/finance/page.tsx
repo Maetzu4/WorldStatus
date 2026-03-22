@@ -46,18 +46,17 @@ export default async function FinancePage() {
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-400">
             <TrendingUp className="w-4 h-4" />
             <span className="text-sm font-medium tracking-wide uppercase">
-              Índices Financieros
+              Financial Indices
             </span>
           </div>
           <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white">
-            Mercados{" "}
+            Global{" "}
             <span className="text-transparent bg-clip-text from-yellow-400 to-amber-400">
-              Globales
+              Markets
             </span>
           </h1>
           <p className="text-lg text-slate-400 max-w-2xl">
-            Seguimiento de los principales índices financieros del mundo con
-            actualización periódica.
+            Tracking major global financial indices with periodic updates.
           </p>
         </section>
 
@@ -140,7 +139,7 @@ export default async function FinancePage() {
                     </div>
                   </div>
                   <p className="text-sm font-medium text-slate-400 mb-1">
-                    Índice {i}
+                    Index {i}
                   </p>
                   <p className="text-3xl font-bold text-slate-50">--</p>
                 </div>
@@ -153,7 +152,7 @@ export default async function FinancePage() {
         <section className="rounded-3xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl overflow-hidden">
           <div className="p-6 border-b border-slate-800 flex justify-between items-center">
             <h2 className="text-xl font-semibold text-white">
-              Historial de Índices
+              Index History
             </h2>
           </div>
           <div className="divide-y divide-slate-800/50">
@@ -181,7 +180,7 @@ export default async function FinancePage() {
                     </div>
                     <div className="flex items-center gap-6 text-sm">
                       <div className="text-right">
-                        <p className="text-slate-400">Valor</p>
+                        <p className="text-slate-400">Value</p>
                         <p className="font-mono text-slate-200 text-lg font-semibold">
                           {Number(record.value).toLocaleString(undefined, {
                             minimumFractionDigits: 2,
@@ -191,7 +190,7 @@ export default async function FinancePage() {
                       </div>
                       {record.change !== null && (
                         <div className="text-right">
-                          <p className="text-slate-400">Cambio</p>
+                          <p className="text-slate-400">Change</p>
                           <p
                             className={`font-mono font-semibold flex items-center gap-1 ${
                               isPositive ? "text-emerald-400" : "text-red-400"
@@ -213,8 +212,8 @@ export default async function FinancePage() {
               })
             ) : (
               <div className="p-12 text-center text-slate-500">
-                No hay datos financieros disponibles todavía. Configura un cron
-                job de sincronización financiera para recolectar datos.
+                No financial data available yet. Configure a finance sync cron
+                job to collect data.
               </div>
             )}
           </div>

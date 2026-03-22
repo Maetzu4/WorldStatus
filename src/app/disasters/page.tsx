@@ -38,21 +38,21 @@ function severityLabel(severity: number | null): {
 } {
   if (severity === null || severity === undefined)
     return {
-      text: "Sin clasificar",
+      text: "Unclassified",
       className: "bg-slate-500/10 text-slate-400 border-slate-500/20",
     };
   if (severity >= 4)
     return {
-      text: `Crítico (${severity})`,
+      text: `Critical (${severity})`,
       className: "bg-red-500/10 text-red-400 border-red-500/20",
     };
   if (severity >= 2)
     return {
-      text: `Moderado (${severity})`,
+      text: `Moderate (${severity})`,
       className: "bg-orange-500/10 text-orange-400 border-orange-500/20",
     };
   return {
-    text: `Bajo (${severity})`,
+    text: `Low (${severity})`,
     className: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
   };
 }
@@ -64,7 +64,7 @@ export default async function DisastersPage() {
   const criticalCount = disasters.filter(
     (d) => d.severity !== null && d.severity >= 4,
   ).length;
-  const latestEvent = disasters[0]?.title || "Sin reportes recientes";
+  const latestEvent = disasters[0]?.title || "No recent reports";
 
   return (
     <div className="flex-1 p-8 overflow-y-auto w-full">
@@ -74,18 +74,18 @@ export default async function DisastersPage() {
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400">
             <ShieldAlert className="w-4 h-4" />
             <span className="text-sm font-medium tracking-wide uppercase">
-              Desastres Naturales
+              Natural Disasters
             </span>
           </div>
           <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white">
-            Alertas{" "}
+            Global{" "}
             <span className="text-transparent bg-clip-text from-red-400 to-orange-400">
-              Globales
+              Alerts
             </span>
           </h1>
           <p className="text-lg text-slate-400 max-w-2xl">
-            Reportes de desastres naturales detectados a través de filtrado
-            inteligente de noticias globales. Actualización cada 30 minutos.
+            Reports of natural disasters detected through intelligent filtering
+            of global news. Updated every 30 minutes.
           </p>
         </section>
 
@@ -99,7 +99,7 @@ export default async function DisastersPage() {
               </div>
             </div>
             <p className="text-sm font-medium text-slate-400 mb-1">
-              Reportes Totales
+              Total Reports
             </p>
             <p className="text-3xl font-bold text-slate-50">{totalReports}</p>
           </div>
@@ -112,7 +112,7 @@ export default async function DisastersPage() {
               </div>
             </div>
             <p className="text-sm font-medium text-slate-400 mb-1">
-              Eventos Críticos
+              Critical Events
             </p>
             <p className="text-3xl font-bold text-slate-50">{criticalCount}</p>
           </div>
@@ -125,7 +125,7 @@ export default async function DisastersPage() {
               </div>
             </div>
             <p className="text-sm font-medium text-slate-400 mb-1">
-              Último Evento
+              Latest Event
             </p>
             <p className="text-lg font-bold text-slate-50 line-clamp-2">
               {latestEvent.length > 60
@@ -139,7 +139,7 @@ export default async function DisastersPage() {
         <section className="rounded-3xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl overflow-hidden">
           <div className="p-6 border-b border-slate-800 flex justify-between items-center">
             <h2 className="text-xl font-semibold text-white">
-              Reportes Recientes
+              Recent Reports
             </h2>
           </div>
           <div className="divide-y divide-slate-800/50">
@@ -190,9 +190,9 @@ export default async function DisastersPage() {
               })
             ) : (
               <div className="p-12 text-center text-slate-500">
-                No hay reportes de desastres disponibles todavía. Ejecuta el
-                cron job <code className="text-slate-400">news-sync.ts</code>{" "}
-                para recolectar datos.
+                No disaster reports available yet. Run the cron job{" "}
+                <code className="text-slate-400">news-sync.ts</code> to collect
+                data.
               </div>
             )}
           </div>

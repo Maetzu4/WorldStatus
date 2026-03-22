@@ -63,18 +63,18 @@ export default async function AstronomyPage() {
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400">
             <Moon className="w-4 h-4" />
             <span className="text-sm font-medium tracking-wide uppercase">
-              Astronomía
+              Astronomy
             </span>
           </div>
           <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white">
-            Eventos{" "}
+            Cosmic{" "}
             <span className="text-transparent bg-clip-text from-purple-400 to-violet-400">
-              Cósmicos
+              Events
             </span>
           </h1>
           <p className="text-lg text-slate-400 max-w-2xl">
-            Imagen astronómica del día (APOD) y notificaciones de eventos
-            solares detectados por NASA DONKI. Actualización diaria.
+            Astronomy Picture of the Day (APOD) and solar event notifications
+            detected by NASA DONKI. Updated daily.
           </p>
         </section>
 
@@ -88,7 +88,7 @@ export default async function AstronomyPage() {
               </div>
             </div>
             <p className="text-sm font-medium text-slate-400 mb-1">
-              Eventos Registrados
+              Recorded Events
             </p>
             <p className="text-3xl font-bold text-slate-50">{totalEvents}</p>
           </div>
@@ -101,10 +101,10 @@ export default async function AstronomyPage() {
               </div>
             </div>
             <p className="text-sm font-medium text-slate-400 mb-1">
-              Último APOD
+              Latest APOD
             </p>
             <p className="text-lg font-bold text-slate-50 line-clamp-2">
-              {latestApod?.extra_info?.title || "Sin datos aún"}
+              {latestApod?.extra_info?.title || "No data yet"}
             </p>
           </div>
 
@@ -116,7 +116,7 @@ export default async function AstronomyPage() {
               </div>
             </div>
             <p className="text-sm font-medium text-slate-400 mb-1">
-              Alertas DONKI
+              DONKI Alerts
             </p>
             <p className="text-3xl font-bold text-slate-50">{donkiCount}</p>
           </div>
@@ -129,8 +129,8 @@ export default async function AstronomyPage() {
               <h2 className="text-xl font-semibold text-white flex items-center gap-2">
                 <Star className="w-5 h-5 text-purple-400" />
                 {latestApod.extra_info.media_type === "video"
-                  ? "Video Astronómico del Día"
-                  : "Imagen Astronómica del Día"}
+                  ? "Astronomy Video of the Day"
+                  : "Astronomy Picture of the Day"}
               </h2>
             </div>
             <div className="p-6">
@@ -150,7 +150,7 @@ export default async function AstronomyPage() {
                         controls
                         className="w-full aspect-video"
                       >
-                        Tu navegador no soporta el elemento de video.
+                        Your browser does not support the video tag.
                       </video>
                     )
                   ) : (
@@ -186,7 +186,7 @@ export default async function AstronomyPage() {
         <section className="rounded-3xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl overflow-hidden">
           <div className="p-6 border-b border-slate-800 flex justify-between items-center">
             <h2 className="text-xl font-semibold text-white">
-              Todos los Eventos
+              All Events
             </h2>
           </div>
           <div className="divide-y divide-slate-800/50">
@@ -238,9 +238,9 @@ export default async function AstronomyPage() {
               })
             ) : (
               <div className="p-12 text-center text-slate-500">
-                No hay eventos astronómicos disponibles todavía. Ejecuta el cron
-                job <code className="text-slate-400">astronomy-sync.ts</code>{" "}
-                para recolectar datos.
+                No astronomy events available yet. Run the cron job{" "}
+                <code className="text-slate-400">astronomy-sync.ts</code> to
+                collect data.
               </div>
             )}
           </div>

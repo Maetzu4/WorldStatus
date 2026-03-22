@@ -36,7 +36,7 @@ export default async function ClimatePage() {
   const latest = climateData?.[0] || {
     temperature: "--",
     humidity: "--",
-    condition: "Esperando datos...",
+    condition: "Awaiting data...",
     wind_speed: "--",
   };
 
@@ -48,18 +48,18 @@ export default async function ClimatePage() {
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400">
             <ThermometerSun className="w-4 h-4" />
             <span className="text-sm font-medium tracking-wide uppercase">
-              Monitor Climático
+              Climate Monitor
             </span>
           </div>
           <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white">
-            Estado Global{" "}
+            Global Status{" "}
             <span className="text-transparent bg-clip-text from-blue-400 to-cyan-400">
-              en Tiempo Real
+              in Real Time
             </span>
           </h1>
           <p className="text-lg text-slate-400 max-w-2xl">
-            Visualización de los ecosistemas globales actualizados cada 12 horas
-            mediante monitoreo satelital y estaciones meteorológicas.
+            Visualization of global ecosystems updated every 12 hours through
+            satellite monitoring and weather stations.
           </p>
         </section>
 
@@ -73,7 +73,7 @@ export default async function ClimatePage() {
               </div>
             </div>
             <p className="text-sm font-medium text-slate-400 mb-1">
-              Temp. Promedio
+              Avg. Temperature
             </p>
             <p className="text-3xl font-bold text-slate-50">
               {latest.temperature}°C
@@ -88,7 +88,7 @@ export default async function ClimatePage() {
               </div>
             </div>
             <p className="text-sm font-medium text-slate-400 mb-1">
-              Humedad Promedio
+              Avg. Humidity
             </p>
             <p className="text-3xl font-bold text-slate-50">
               {latest.humidity}%
@@ -102,7 +102,7 @@ export default async function ClimatePage() {
                 <Wind className="w-6 h-6" />
               </div>
             </div>
-            <p className="text-sm font-medium text-slate-400 mb-1">Viento</p>
+            <p className="text-sm font-medium text-slate-400 mb-1">Wind</p>
             <p className="text-3xl font-bold text-slate-50">
               {latest.wind_speed} km/h
             </p>
@@ -116,7 +116,7 @@ export default async function ClimatePage() {
               </div>
             </div>
             <p className="text-sm font-medium text-slate-400 mb-1">
-              Condición General
+              General Condition
             </p>
             <p className="text-3xl font-bold text-slate-50 capitalize">
               {latest.condition}
@@ -128,7 +128,7 @@ export default async function ClimatePage() {
         <section className="rounded-3xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl overflow-hidden">
           <div className="p-6 border-b border-slate-800 flex justify-between items-center">
             <h2 className="text-xl font-semibold text-white">
-              Últimos Registros
+              Latest Records
             </h2>
           </div>
           <div className="divide-y divide-slate-800/50">
@@ -145,7 +145,7 @@ export default async function ClimatePage() {
                     <div>
                       <h3 className="text-slate-200 font-medium capitalize">
                         {record.location_id === "global"
-                          ? "Promedio Global"
+                          ? "Global Average"
                           : record.location_id}
                       </h3>
                       <p className="text-sm text-slate-500">
@@ -155,13 +155,13 @@ export default async function ClimatePage() {
                   </div>
                   <div className="flex items-center gap-6 text-sm">
                     <div className="text-right">
-                      <p className="text-slate-400">Temperatura</p>
+                      <p className="text-slate-400">Temperature</p>
                       <p className="font-mono text-slate-200">
                         {record.temperature}°C
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-slate-400">Humedad</p>
+                      <p className="text-slate-400">Humidity</p>
                       <p className="font-mono text-slate-200">
                         {record.humidity}%
                       </p>
@@ -171,8 +171,8 @@ export default async function ClimatePage() {
               ))
             ) : (
               <div className="p-12 text-center text-slate-500">
-                No hay datos climáticos disponibles todavía. Asegúrate de
-                ejecutar el script recolector en Dokploy.
+                No climate data available yet. Make sure to run the collection
+                script in Dokploy.
               </div>
             )}
           </div>

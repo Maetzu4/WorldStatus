@@ -13,11 +13,11 @@ import {
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/climate", label: "Clima", icon: CloudRain },
-  { href: "/disasters", label: "Desastres naturales", icon: ShieldAlert },
-  { href: "/news", label: "Noticias globales", icon: Newspaper },
-  { href: "/finance", label: "Finanzas", icon: TrendingUp },
-  { href: "/astronomy", label: "Astronomía", icon: Moon },
+  { href: "/climate", label: "Climate", icon: CloudRain },
+  { href: "/disasters", label: "Natural Disasters", icon: ShieldAlert },
+  { href: "/news", label: "Global News", icon: Newspaper },
+  { href: "/finance", label: "Finance", icon: TrendingUp },
+  { href: "/astronomy", label: "Astronomy", icon: Moon },
 ];
 
 export default function Sidebar() {
@@ -29,7 +29,7 @@ export default function Sidebar() {
         <h1 className="text-2xl font-bold from-blue-400 to-indigo-500 bg-clip-text">
           World Status
         </h1>
-        <p className="text-sm text-slate-400 mt-2">Monitor Global 24h</p>
+        <p className="text-sm text-slate-400 mt-2">24h Global Monitor</p>
       </div>
       <nav className="flex-1 px-4 space-y-2 mt-4">
         {navItems.map((item) => {
@@ -56,7 +56,7 @@ export default function Sidebar() {
       </nav>
       <div className="p-6 border-t border-slate-800/50">
         <div className="text-xs text-slate-500 text-center">
-          Actualizado cada 6h
+          Updated every 6h
         </div>
       </div>
     </aside>

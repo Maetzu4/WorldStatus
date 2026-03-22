@@ -53,18 +53,18 @@ export default async function NewsPage() {
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
             <Newspaper className="w-4 h-4" />
             <span className="text-sm font-medium tracking-wide uppercase">
-              Noticias Globales
+              Global News
             </span>
           </div>
           <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white">
-            Titulares{" "}
+            World{" "}
             <span className="text-transparent bg-clip-text from-emerald-400 to-teal-400">
-              del Mundo
+              Headlines
             </span>
           </h1>
           <p className="text-lg text-slate-400 max-w-2xl">
-            Recopilación de noticias globales actualizadas periódicamente desde
-            múltiples fuentes internacionales.
+            A collection of global news periodically updated from multiple
+            international sources.
           </p>
         </section>
 
@@ -78,7 +78,7 @@ export default async function NewsPage() {
               </div>
             </div>
             <p className="text-sm font-medium text-slate-400 mb-1">
-              Artículos Recientes
+              Recent Articles
             </p>
             <p className="text-3xl font-bold text-slate-50">{totalArticles}</p>
           </div>
@@ -91,7 +91,7 @@ export default async function NewsPage() {
               </div>
             </div>
             <p className="text-sm font-medium text-slate-400 mb-1">
-              Fuentes Activas
+              Active Sources
             </p>
             <p className="text-3xl font-bold text-slate-50">{sources.size}</p>
           </div>
@@ -104,7 +104,7 @@ export default async function NewsPage() {
               </div>
             </div>
             <p className="text-sm font-medium text-slate-400 mb-1">
-              Última Categoría
+              Last Category
             </p>
             <p className="text-3xl font-bold text-slate-50 capitalize">
               {latestCategory}
@@ -116,7 +116,7 @@ export default async function NewsPage() {
         <section className="rounded-3xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl overflow-hidden">
           <div className="p-6 border-b border-slate-800 flex justify-between items-center">
             <h2 className="text-xl font-semibold text-white">
-              Últimas Noticias
+              Latest News
             </h2>
           </div>
           <div className="divide-y divide-slate-800/50">
@@ -167,9 +167,9 @@ export default async function NewsPage() {
               ))
             ) : (
               <div className="p-12 text-center text-slate-500">
-                No hay noticias disponibles todavía. Ejecuta el cron job{" "}
-                <code className="text-slate-400">news-sync.ts</code> para
-                recolectar datos.
+                No news available yet. Run the cron job{" "}
+                <code className="text-slate-400">news-sync.ts</code> to
+                collect data.
               </div>
             )}
           </div>
