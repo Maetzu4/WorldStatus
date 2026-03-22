@@ -4,11 +4,11 @@ import { ExternalAPIError } from "../src/lib/errors";
 
 const MARKETSTACK_API_KEY = process.env.MARKETSTACK_API_KEY;
 
-// Major indices to track
+// ETFs that track major indices (free tier doesn't support .INDX symbols)
 const INDICES = [
-  { symbol: "DJI.INDX", name: "Dow Jones" },
-  { symbol: "SPX.INDX", name: "S&P 500" },
-  { symbol: "IXIC.INDX", name: "NASDAQ" },
+  { symbol: "SPY", name: "S&P 500 (SPY)" },
+  { symbol: "DIA", name: "Dow Jones (DIA)" },
+  { symbol: "QQQ", name: "NASDAQ (QQQ)" },
 ];
 
 async function syncFinance() {

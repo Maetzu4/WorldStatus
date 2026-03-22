@@ -10,6 +10,8 @@ interface AstronomyEvent {
   extra_info: {
     title?: string;
     url?: string;
+    hdurl?: string;
+    media_type?: string;
     explanation?: string;
     messageID?: string;
     messageBody?: string;
@@ -39,6 +41,10 @@ const eventBadge: Record<string, string> = {
   DONKI_NOTIFICATION: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20",
 };
 const defaultBadge = "bg-slate-500/10 text-slate-400 border-slate-500/20";
+
+function isVideoUrl(url: string): boolean {
+  return url.includes("youtube") || url.includes("vimeo") || url.includes("youtu.be");
+}
 
 export default async function AstronomyPage() {
   const events = await getAstronomyData();
@@ -120,18 +126,27 @@ export default async function AstronomyPage() {
             <div className="p-6 border-b border-slate-800">
               <h2 className="text-xl font-semibold text-white flex items-center gap-2">
                 <Star className="w-5 h-5 text-purple-400" />
-                Imagen Astronómica del Día
+                {isVideoUrl(latestApod.extra_info.url) ? "Video Astronómico del Día" : "Imagen Astronómica del Día"}
               </h2>
             </div>
             <div className="p-6">
               <div className="flex flex-col lg:flex-row gap-6">
                 <div className="w-full lg:w-1/2 rounded-2xl overflow-hidden bg-slate-800">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={latestApod.extra_info.url}
-                    alt={latestApod.extra_info.title || "APOD"}
-                    className="w-full h-auto object-cover max-h-96"
-                  />
+                  {isVideoUrl(latestApod.extra_info.url) ? (
+                    <iframe
+                      src={latestApod.extra_info.url}
+                      title={latestApod.extra_info.title || "APOD"}
+                      className="w-full aspect-video"
+                      allowFullScreen
+                    />
+                  ) : (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={latestApod.extra_info.hdurl || latestApod.extra_info.url}
+                      alt={latestApod.extra_info.title || "APOD"}
+                      className="w-full h-auto object-cover max-h-96"
+                    />
+                  )}
                 </div>
                 <div className="flex-1 space-y-3">
                   <h3 className="text-2xl font-bold text-white">

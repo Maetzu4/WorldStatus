@@ -23,6 +23,8 @@ async function syncAstronomy() {
           JSON.stringify({
             title: apodData.title,
             url: apodData.url,
+            hdurl: apodData.hdurl || null,
+            media_type: apodData.media_type || "image",
             explanation: apodData.explanation,
           }),
         ],
