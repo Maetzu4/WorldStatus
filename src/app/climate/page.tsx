@@ -1,27 +1,36 @@
 import { MapPin, Droplets, ThermometerSun, Wind } from "lucide-react";
+import { query } from "@/lib/db";
 
-async function getClimateData() {
-  // In Next.js App Router, we can elegantly fetch our internal API routes using absolute URLs
-  // but since we are server-side, it's often more efficient to call the DB directly if we wanted to.
-  // However, relying on the `/api` with native fetch is good to trigger its built-in Next caching.
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+// Force dynamic rendering so data is always fresh
+export const dynamic = "force-dynamic";
+
+interface WeatherSnapshot {
+  location_id: string;
+  timestamp: string | number | Date;
+  temperature: number | string;
+  humidity: number | string;
+  pressure: number | string;
+  wind_speed: number | string;
+  uvi: number | string;
+  weather_type: string;
+  condition?: string;
+  source: string;
+}
+
+async function getClimateData(): Promise<WeatherSnapshot[]> {
   try {
-    const res = await fetch(`${appUrl}/api/data/climate?region=global`, {
-      next: { revalidate: 21600 }, // Cache every 6 hours to match the Redis layer caching logic
-    });
-
-    if (!res.ok) {
-      return { data: [] };
-    }
-    return res.json();
+    const res = await query<WeatherSnapshot>(
+      "SELECT * FROM weather_snapshots ORDER BY timestamp DESC LIMIT 100;"
+    );
+    return res.rows;
   } catch (error) {
-    console.warn("Failed to fetch climate data (this is expected during build if the server is off):", error);
-    return { data: [] };
+    console.warn("Failed to fetch climate data:", error);
+    return [];
   }
 }
 
 export default async function ClimatePage() {
-  const { data: climateData } = await getClimateData();
+  const climateData = await getClimateData();
 
   // Pick the latest snapshot or default values if DB is still empty
   const latest = climateData?.[0] || {
@@ -124,7 +133,7 @@ export default async function ClimatePage() {
           </div>
           <div className="divide-y divide-slate-800/50">
             {climateData && climateData.length > 0 ? (
-              climateData.slice(0, 10).map((record: { location_id: string; timestamp: string | number | Date; temperature: number | string; humidity: number | string }, idx: number) => (
+              climateData.slice(0, 10).map((record, idx) => (
                 <div
                   key={idx}
                   className="p-4 sm:p-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between hover:bg-slate-800/30 transition-colors"
