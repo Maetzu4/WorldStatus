@@ -5,14 +5,19 @@ async function getClimateData() {
   // but since we are server-side, it's often more efficient to call the DB directly if we wanted to.
   // However, relying on the `/api` with native fetch is good to trigger its built-in Next caching.
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const res = await fetch(`${appUrl}/api/data/climate?region=global`, {
-    next: { revalidate: 21600 }, // Cache every 6 hours to match the Redis layer caching logic
-  });
+  try {
+    const res = await fetch(`${appUrl}/api/data/climate?region=global`, {
+      next: { revalidate: 21600 }, // Cache every 6 hours to match the Redis layer caching logic
+    });
 
-  if (!res.ok) {
+    if (!res.ok) {
+      return { data: [] };
+    }
+    return res.json();
+  } catch (error) {
+    console.warn("Failed to fetch climate data (this is expected during build if the server is off):", error);
     return { data: [] };
   }
-  return res.json();
 }
 
 export default async function ClimatePage() {
