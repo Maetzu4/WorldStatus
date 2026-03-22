@@ -42,8 +42,10 @@ const eventBadge: Record<string, string> = {
 };
 const defaultBadge = "bg-slate-500/10 text-slate-400 border-slate-500/20";
 
-function isVideoUrl(url: string): boolean {
-  return url.includes("youtube") || url.includes("vimeo") || url.includes("youtu.be");
+function isEmbedVideo(url: string): boolean {
+  return (
+    url.includes("youtube") || url.includes("vimeo") || url.includes("youtu.be")
+  );
 }
 
 export default async function AstronomyPage() {
@@ -126,23 +128,37 @@ export default async function AstronomyPage() {
             <div className="p-6 border-b border-slate-800">
               <h2 className="text-xl font-semibold text-white flex items-center gap-2">
                 <Star className="w-5 h-5 text-purple-400" />
-                {isVideoUrl(latestApod.extra_info.url) ? "Video Astronómico del Día" : "Imagen Astronómica del Día"}
+                {latestApod.extra_info.media_type === "video"
+                  ? "Video Astronómico del Día"
+                  : "Imagen Astronómica del Día"}
               </h2>
             </div>
             <div className="p-6">
               <div className="flex flex-col lg:flex-row gap-6">
                 <div className="w-full lg:w-1/2 rounded-2xl overflow-hidden bg-slate-800">
-                  {isVideoUrl(latestApod.extra_info.url) ? (
-                    <iframe
-                      src={latestApod.extra_info.url}
-                      title={latestApod.extra_info.title || "APOD"}
-                      className="w-full aspect-video"
-                      allowFullScreen
-                    />
+                  {latestApod.extra_info.media_type === "video" ? (
+                    isEmbedVideo(latestApod.extra_info.url) ? (
+                      <iframe
+                        src={latestApod.extra_info.url}
+                        title={latestApod.extra_info.title || "APOD"}
+                        className="w-full aspect-video"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <video
+                        src={latestApod.extra_info.url}
+                        controls
+                        className="w-full aspect-video"
+                      >
+                        Tu navegador no soporta el elemento de video.
+                      </video>
+                    )
                   ) : (
                     /* eslint-disable-next-line @next/next/no-img-element */
                     <img
-                      src={latestApod.extra_info.hdurl || latestApod.extra_info.url}
+                      src={
+                        latestApod.extra_info.hdurl || latestApod.extra_info.url
+                      }
                       alt={latestApod.extra_info.title || "APOD"}
                       className="w-full h-auto object-cover max-h-96"
                     />
