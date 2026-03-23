@@ -62,15 +62,19 @@ export async function getTimelineData(): Promise<TimelineEntry[]> {
       astronomia: "astronomía",
     };
 
-    const timeline: TimelineEntry[] = (newsRes.rows as unknown as NewsRow[]).map(
-      (row) => ({
-        id: row.id,
-        category: (categoryMap[row.category] ||
-          "noticia") as TimelineEntry["category"],
-        title: row.title,
-        timestamp: new Date(row.published_at || row.created_at),
+    const timeline: TimelineEntry[] = (newsRes.rows as unknown as NewsRow[])
+      .map((row) => {
+        const date = new Date(row.published_at || row.created_at);
+        if (isNaN(date.getTime())) return null; // Skip invalid dates
+        return {
+          id: row.id,
+          category: (categoryMap[row.category] ||
+            "noticia") as TimelineEntry["category"],
+          title: row.title,
+          timestamp: date,
+        };
       })
-    );
+      .filter((item): item is TimelineEntry => item !== null);
 
     // Fetch Finance specifically if significant
     const financeRes = await query(
@@ -83,11 +87,13 @@ export async function getTimelineData(): Promise<TimelineEntry[]> {
 
     (financeRes.rows as unknown as FinanceRow[]).forEach((row) => {
       const changeVal = parseFloat(row.change);
+      const date = new Date(row.timestamp);
+      if (isNaN(date.getTime())) return;
       timeline.push({
         id: row.id,
         category: "finanzas",
         title: `${row.index_name} ${changeVal >= 0 ? "gained" : "lost"} ${Math.abs(changeVal)}%`,
-        timestamp: new Date(row.timestamp),
+        timestamp: date,
       });
     });
 
@@ -101,11 +107,13 @@ export async function getTimelineData(): Promise<TimelineEntry[]> {
     );
 
     (astroRes.rows as unknown as AstroRow[]).forEach((row) => {
+      const date = new Date(row.date);
+      if (isNaN(date.getTime())) return;
       timeline.push({
         id: row.id,
         category: "astronomía",
         title: `${row.event} detected`,
-        timestamp: new Date(row.date),
+        timestamp: date,
       });
     });
 
