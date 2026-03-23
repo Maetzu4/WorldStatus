@@ -30,7 +30,7 @@ export const getCache = async <T>(key: string): Promise<T | null> => {
   }
 };
 
-export const setCache = async (key: string, value: any, ttlSeconds: number = 21600): Promise<void> => {
+export const setCache = async (key: string, value: unknown, ttlSeconds: number = 21600): Promise<void> => {
   try {
     await redis.set(key, JSON.stringify(value), 'EX', ttlSeconds);
   } catch (error) {

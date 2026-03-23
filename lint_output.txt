@@ -1,0 +1,20 @@
+
+> world-status@0.1.0 lint
+> eslint
+
+
+C:\Users\z6814\OneDrive\Documentos\Proyectos\world-status\src\app\page.tsx
+  11:3  warning  'Zap' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\z6814\OneDrive\Documentos\Proyectos\world-status\src\lib\dashboard.ts
+    8:11  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   42:60  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   58:33  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   76:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  115:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\z6814\OneDrive\Documentos\Proyectos\world-status\src\lib\redis.ts
+  33:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 7 problems (6 errors, 1 warning)
+
