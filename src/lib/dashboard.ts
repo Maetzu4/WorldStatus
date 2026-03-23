@@ -41,75 +41,82 @@ export interface DashboardStats {
 }
 
 export async function getTimelineData(): Promise<TimelineEntry[]> {
-  // Last 24 hours
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-  // Fetch News (includes General, Climate, Disaster, Finance, Astronomy)
-  const newsRes = await query(
-    `SELECT id, category, title, published_at as timestamp 
-     FROM news_articles 
-     WHERE published_at >= $1 
-     ORDER BY published_at DESC LIMIT 30`,
-    [since]
-  );
+  try {
+    // Fetch News (includes General, Climate, Disaster, Finance, Astronomy)
+    const newsRes = await query(
+      `SELECT id, category, title, published_at as timestamp 
+       FROM news_articles 
+       WHERE published_at >= $1 
+       ORDER BY published_at DESC LIMIT 30`,
+      [since]
+    );
 
-  // Map DB categories to UI categories
-  const categoryMap: Record<string, TimelineEntry["category"]> = {
-    general: "noticia",
-    clima: "clima",
-    desastre: "desastre",
-    finanzas: "finanzas",
-    astronomia: "astronomía",
-  };
+    // Map DB categories to UI categories
+    const categoryMap: Record<string, TimelineEntry["category"]> = {
+      general: "noticia",
+      clima: "clima",
+      desastre: "desastre",
+      finanzas: "finanzas",
+      astronomia: "astronomía",
+    };
 
-  const timeline: TimelineEntry[] = (newsRes.rows as unknown as NewsRow[]).map((row) => ({
-    id: row.id,
-    category: (categoryMap[row.category] || "noticia") as TimelineEntry["category"],
-    title: row.title,
-    timestamp: new Date(row.published_at || row.created_at),
-  }));
+    const timeline: TimelineEntry[] = (newsRes.rows as unknown as NewsRow[]).map(
+      (row) => ({
+        id: row.id,
+        category: (categoryMap[row.category] ||
+          "noticia") as TimelineEntry["category"],
+        title: row.title,
+        timestamp: new Date(row.published_at || row.created_at),
+      })
+    );
 
-  // Fetch Finance specifically if significant
-  const financeRes = await query(
-    `SELECT id, index_name, value, change, timestamp 
-     FROM finance_indices 
-     WHERE timestamp >= $1 
-     ORDER BY ABS(change) DESC LIMIT 5`,
-    [since]
-  );
-  
-  (financeRes.rows as unknown as FinanceRow[]).forEach((row) => {
-    const changeVal = parseFloat(row.change);
-    timeline.push({
-      id: row.id,
-      category: "finanzas",
-      title: `${row.index_name} ${changeVal >= 0 ? 'gained' : 'lost'} ${Math.abs(changeVal)}%`,
-      timestamp: new Date(row.timestamp),
+    // Fetch Finance specifically if significant
+    const financeRes = await query(
+      `SELECT id, index_name, value, change, timestamp 
+       FROM finance_indices 
+       WHERE timestamp >= $1 
+       ORDER BY ABS(change) DESC LIMIT 5`,
+      [since]
+    );
+
+    (financeRes.rows as unknown as FinanceRow[]).forEach((row) => {
+      const changeVal = parseFloat(row.change);
+      timeline.push({
+        id: row.id,
+        category: "finanzas",
+        title: `${row.index_name} ${changeVal >= 0 ? "gained" : "lost"} ${Math.abs(changeVal)}%`,
+        timestamp: new Date(row.timestamp),
+      });
     });
-  });
 
-  // Fetch Astronomy events
-  const astroRes = await query(
-    `SELECT id, event, date as timestamp, extra_info 
-     FROM astronomy_events 
-     WHERE date >= $1 
-     ORDER BY date DESC LIMIT 10`,
-    [since]
-  );
+    // Fetch Astronomy events
+    const astroRes = await query(
+      `SELECT id, event, date as timestamp, extra_info 
+       FROM astronomy_events 
+       WHERE date >= $1 
+       ORDER BY date DESC LIMIT 10`,
+      [since]
+    );
 
-  (astroRes.rows as unknown as AstroRow[]).forEach((row) => {
-    timeline.push({
-      id: row.id,
-      category: "astronomía",
-      title: `${row.event} detected`,
-      timestamp: new Date(row.date),
+    (astroRes.rows as unknown as AstroRow[]).forEach((row) => {
+      timeline.push({
+        id: row.id,
+        category: "astronomía",
+        title: `${row.event} detected`,
+        timestamp: new Date(row.date),
+      });
     });
-  });
 
-  // Sort by timestamp desc and de-duplicate or just limit
-  return timeline
-    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-    .slice(0, 20);
+    // Sort by timestamp desc and de-duplicate or just limit
+    return timeline
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+      .slice(0, 20);
+  } catch (error) {
+    console.error("Error fetching timeline data:", error);
+    return [];
+  }
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
