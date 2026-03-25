@@ -159,16 +159,16 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     const newsSentiment = Math.floor(Math.random() * 20) + 65; 
 
     return {
-      newsCount: parseInt(newsCount.rows[0].count),
-      disasterCount: parseInt(disasterCount.rows[0].count),
+      newsCount: parseInt(newsCount.rows[0]?.count || "0"),
+      disasterCount: parseInt(disasterCount.rows[0]?.count || "0"),
       topMover: financeMover.rows[0] ? { name: financeMover.rows[0].index_name, change: parseFloat(financeMover.rows[0].change) } : null,
-      astroCount: parseInt(astroCount.rows[0].count),
-      climateAlerts: parseInt(climateAlerts.rows[0].count),
-      hotZones: (hotZones.rows as unknown as { country: string; count: string }[]).map((r) => ({ country: r.country, count: parseInt(r.count) })),
+      astroCount: parseInt(astroCount.rows[0]?.count || "0"),
+      climateAlerts: parseInt(climateAlerts.rows[0]?.count || "0"),
+      hotZones: (hotZones.rows as unknown as { country: string; count: string }[] || []).map((r) => ({ country: r.country, count: parseInt(r.count) })),
       tempAnomaly,
       newsSentiment,
-      marketTrend: parseFloat(marketTrend.rows[0].trend || "0"),
-      disasterSeverity: parseInt(maxSeverity.rows[0].severity || "0"),
+      marketTrend: parseFloat(marketTrend.rows[0]?.trend || "0"),
+      disasterSeverity: parseInt(maxSeverity.rows[0]?.severity || "0"),
     };
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);

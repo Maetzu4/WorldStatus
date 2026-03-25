@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
+import dynamic from "next/dynamic";
+
+const Sidebar = dynamic(() => import("@/components/Sidebar"), { ssr: false });
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -9,6 +11,12 @@ export const metadata: Metadata = {
   title: "World Status - Global Dashboard",
   description:
     "The state of the world in the last 24 hours: Climate, Natural Disasters, Global News, Financial Indices, and Astronomy Events.",
+};
+
+export const viewport = {
+  themeColor: "#0f172a",
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
