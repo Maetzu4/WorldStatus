@@ -14,12 +14,7 @@ import {
 import { getTimelineData, getDashboardStats, getMapPoints } from "@/lib/dashboard";
 import { formatDistanceToNow } from "date-fns";
 import { enUS } from "date-fns/locale";
-import dynamicImport from "next/dynamic";
-
-const GlobalMap = dynamicImport(() => import("@/components/Map"), {
-  ssr: false,
-  loading: () => <div className="w-full h-[450px] bg-slate-900 animate-pulse rounded-2xl border border-slate-800" />
-});
+import GlobalMap from "@/components/Map";
 
 export const dynamic = "force-dynamic";
 
