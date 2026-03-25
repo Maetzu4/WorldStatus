@@ -179,6 +179,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       astroCount: 0,
       climateAlerts: 0,
       hotZones: [],
+      tempAnomaly: 0,
+      newsSentiment: 0,
+      marketTrend: 0,
+      disasterSeverity: 0,
     };
   }
 }
@@ -205,13 +209,13 @@ export async function getMapPoints(): Promise<MapPoint[]> {
       [since]
     );
 
-    const points: MapPoint[] = newsRes.rows.map((row: any) => ({
+    const points: MapPoint[] = newsRes.rows.map((row) => ({
       id: `news-${row.id}`,
       type: row.category === 'desastre' ? 'disaster' : 'news',
-      lat: parseFloat(row.lat),
-      lon: parseFloat(row.lon),
-      title: row.title,
-      description: row.description || "No description available",
+      lat: parseFloat(row.lat as string),
+      lon: parseFloat(row.lon as string),
+      title: row.title as string,
+      description: (row.description as string) || "No description available",
       link: `/news/${row.id}`
     }));
 
@@ -223,16 +227,17 @@ export async function getMapPoints(): Promise<MapPoint[]> {
          ORDER BY created_at DESC LIMIT 10`
       );
 
-      cityWeather.rows.forEach((row: any) => {
+      cityWeather.rows.forEach((row) => {
         // location_id is expected to be "city_name" or "lat:lon"
-        if (row.location_id.includes(':')) {
-          const [lat, lon] = row.location_id.split(':').map(parseFloat);
+        const locationId = row.location_id as string;
+        if (locationId.includes(':')) {
+          const [lat, lon] = locationId.split(':').map(parseFloat);
           points.push({
             id: `weather-${row.id}`,
             type: 'weather',
             lat,
             lon,
-            title: `Weather in ${row.location_id}`,
+            title: `Weather in ${locationId}`,
             description: `${row.weather_type}, ${row.temperature}°C`,
             link: '/climate'
           });
