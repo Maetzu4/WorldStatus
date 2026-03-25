@@ -10,13 +10,16 @@ import {
   Globe,
   Thermometer,
   Smile,
-  Zap,
 } from "lucide-react";
 import { getTimelineData, getDashboardStats, getMapPoints } from "@/lib/dashboard";
 import { formatDistanceToNow } from "date-fns";
 import { enUS } from "date-fns/locale";
-import GlobalMap from "@/components/Map";
-import { Suspense } from "react";
+import dynamicImport from "next/dynamic";
+
+const GlobalMap = dynamicImport(() => import("@/components/Map"), {
+  ssr: false,
+  loading: () => <div className="w-full h-[450px] bg-slate-900 animate-pulse rounded-2xl border border-slate-800" />
+});
 
 export const dynamic = "force-dynamic";
 
@@ -119,15 +122,13 @@ export default async function Home() {
           />
         </section>
 
-        {/* Interactive Map Section */}
+        {/* Interactive Global Monitor */}
         <section className="space-y-4">
           <div className="flex items-center gap-2 mb-2">
             <Globe className="w-5 h-5 text-blue-400" />
             <h2 className="text-xl font-bold text-white tracking-tight">Interactive Global Monitor</h2>
           </div>
-          <Suspense fallback={<div className="w-full h-[450px] bg-slate-900 animate-pulse rounded-2xl border border-slate-800" />}>
-            <GlobalMap points={mapPoints} />
-          </Suspense>
+          <GlobalMap points={mapPoints} />
         </section>
 
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
