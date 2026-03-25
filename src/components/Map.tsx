@@ -40,15 +40,7 @@ const Popup = dynamic(() => import("react-leaflet").then((mod) => mod.Popup), {
   ssr: false,
 }) as ComponentType<PopupProps>;
 
-interface MapPoint {
-  id: string;
-  type: "weather" | "disaster" | "news";
-  lat: number;
-  lon: number;
-  title: string;
-  description: string;
-  link: string;
-}
+import { type MapPoint } from "@/lib/dashboard";
 
 const emptySubscribe = () => () => {};
 
@@ -111,7 +103,7 @@ export default function GlobalMap({ points }: { points: MapPoint[] }) {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Ver detalles
+                  View details
                 </a>
               </div>
             </Popup>
