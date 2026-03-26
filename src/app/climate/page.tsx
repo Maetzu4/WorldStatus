@@ -133,9 +133,9 @@ export default async function ClimatePage() {
           </div>
           <div className="divide-y divide-slate-800/50">
             {climateData && climateData.length > 0 ? (
-              climateData.slice(0, 10).map((record, idx) => (
+              climateData.slice(0, 10).map((record) => (
                 <div
-                  key={idx}
+                  key={`${record.location_id}-${record.timestamp}`}
                   className="p-4 sm:p-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between hover:bg-slate-800/30 transition-colors"
                 >
                   <div className="flex items-center gap-4">

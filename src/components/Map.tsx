@@ -16,8 +16,16 @@ interface TileLayerProps {
   attribution?: string;
   url: string;
 }
-interface MarkerProps {
-  position: [number, number];
+interface CircleMarkerProps {
+  center: [number, number];
+  radius?: number;
+  pathOptions?: {
+    color?: string;
+    fillColor?: string;
+    fillOpacity?: number;
+    weight?: number;
+    className?: string;
+  };
   children?: React.ReactNode;
 }
 interface PopupProps {
@@ -32,25 +40,42 @@ const TileLayer = dynamic(
   () => import("react-leaflet").then((mod) => mod.TileLayer),
   { ssr: false },
 ) as ComponentType<TileLayerProps>;
-const Marker = dynamic(
-  () => import("react-leaflet").then((mod) => mod.Marker),
+const CircleMarker = dynamic(
+  () => import("react-leaflet").then((mod) => mod.CircleMarker),
   { ssr: false },
-) as ComponentType<MarkerProps>;
+) as ComponentType<CircleMarkerProps>;
 const Popup = dynamic(() => import("react-leaflet").then((mod) => mod.Popup), {
   ssr: false,
 }) as ComponentType<PopupProps>;
 
-interface MapPoint {
-  id: string;
-  type: "weather" | "disaster" | "news";
-  lat: number;
-  lon: number;
-  title: string;
-  description: string;
-  link: string;
-}
+import { type MapPoint } from "@/lib/dashboard";
 
 const emptySubscribe = () => () => {};
+
+// Color config per point type
+const markerStyles: Record<
+  string,
+  { fillColor: string; color: string; radius: number; label: string }
+> = {
+  weather: {
+    fillColor: "#22d3ee",
+    color: "#0891b2",
+    radius: 7,
+    label: "Weather",
+  },
+  disaster: {
+    fillColor: "#ef4444",
+    color: "#dc2626",
+    radius: 9,
+    label: "Disaster",
+  },
+  news: {
+    fillColor: "#34d399",
+    color: "#059669",
+    radius: 7,
+    label: "News",
+  },
+};
 
 export default function GlobalMap({ points }: { points: MapPoint[] }) {
   const mounted = useSyncExternalStore(
@@ -79,12 +104,12 @@ export default function GlobalMap({ points }: { points: MapPoint[] }) {
 
   if (!mounted) {
     return (
-      <div className="w-full h-[400px] bg-slate-900 animate-pulse rounded-xl" />
+      <div className="w-full h-[500px] bg-slate-900 animate-pulse rounded-xl" />
     );
   }
 
   return (
-    <div className="w-full h-[400px] rounded-xl overflow-hidden border border-slate-800 relative z-0">
+    <div className="w-full h-[500px] rounded-xl overflow-hidden border border-slate-800 relative z-0">
       <MapContainer
         center={[20, 0]}
         zoom={2}
@@ -92,8 +117,8 @@ export default function GlobalMap({ points }: { points: MapPoint[] }) {
         className="w-full h-full"
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
         {points.map((point) => (
           <Marker key={point.id} position={[point.lat, point.lon]}>
@@ -111,13 +136,33 @@ export default function GlobalMap({ points }: { points: MapPoint[] }) {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Ver detalles
+                  View details
                 </a>
               </div>
             </Popup>
           </Marker>
         ))}
       </MapContainer>
+
+      {/* Inline legend */}
+      <div className="absolute bottom-4 right-4 z-1000 bg-slate-900/90 backdrop-blur-sm border border-slate-700 rounded-lg px-3 py-2.5 shadow-xl">
+        <p className="text-[9px] uppercase font-bold text-slate-400 tracking-widest mb-1.5">
+          Legend
+        </p>
+        <div className="flex flex-col gap-1.5">
+          {Object.entries(markerStyles).map(([key, style]) => (
+            <div key={key} className="flex items-center gap-2">
+              <span
+                className="w-2.5 h-2.5 rounded-full inline-block"
+                style={{ backgroundColor: style.fillColor }}
+              />
+              <span className="text-[10px] text-slate-300 font-medium">
+                {style.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

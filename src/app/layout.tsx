@@ -11,6 +11,12 @@ export const metadata: Metadata = {
     "The state of the world in the last 24 hours: Climate, Natural Disasters, Global News, Financial Indices, and Astronomy Events.",
 };
 
+export const viewport = {
+  themeColor: "#0f172a",
+  width: "device-width",
+  initialScale: 1,
+};
+
 export default function RootLayout({
   children,
 }: {

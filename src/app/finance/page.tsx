@@ -63,8 +63,8 @@ export default async function FinancePage() {
         {/* KPI Cards - Latest indices */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {latestIndices.length > 0 ? (
-            latestIndices.map((idx, i) => {
-              const isPositive = idx.change !== null && Number(idx.change) >= 0;
+            latestIndices.map((index, i) => {
+              const isPositive = index.change !== null && Number(index.change) >= 0;
               const colors = [
                 {
                   bg: "bg-yellow-500/10",
@@ -98,7 +98,7 @@ export default async function FinancePage() {
                     >
                       <BarChart3 className="w-6 h-6" />
                     </div>
-                    {idx.change !== null && (
+                    {index.change !== null && (
                       <div
                         className={`flex items-center gap-1 text-sm font-semibold ${
                           isPositive ? "text-emerald-400" : "text-red-400"
@@ -110,15 +110,15 @@ export default async function FinancePage() {
                           <TrendingDown className="w-4 h-4" />
                         )}
                         {isPositive ? "+" : ""}
-                        {Number(idx.change).toFixed(2)}%
+                        {Number(index.change).toFixed(2)}%
                       </div>
                     )}
                   </div>
                   <p className="text-sm font-medium text-slate-400 mb-1">
-                    {idx.index_name}
+                    {index.index_name}
                   </p>
                   <p className="text-3xl font-bold text-slate-50">
-                    {Number(idx.value).toLocaleString(undefined, {
+                    {Number(index.value).toLocaleString(undefined, {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
@@ -157,12 +157,12 @@ export default async function FinancePage() {
           </div>
           <div className="divide-y divide-slate-800/50">
             {indices.length > 0 ? (
-              indices.slice(0, 20).map((record, idx) => {
+              indices.slice(0, 20).map((record) => {
                 const isPositive =
                   record.change !== null && Number(record.change) >= 0;
                 return (
                   <div
-                    key={idx}
+                    key={record.id}
                     className="p-4 sm:p-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between hover:bg-slate-800/30 transition-colors"
                   >
                     <div className="flex items-center gap-4">
