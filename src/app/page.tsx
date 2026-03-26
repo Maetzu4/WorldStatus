@@ -10,7 +10,14 @@ import {
   Globe,
   Thermometer,
   Smile,
+  Thermometer,
+  Smile,
 } from "lucide-react";
+import {
+  getTimelineData,
+  getDashboardStats,
+  getMapPoints,
+} from "@/lib/dashboard";
 import {
   getTimelineData,
   getDashboardStats,
@@ -25,8 +32,10 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   try {
     const [timelineData, stats, mapPoints] = await Promise.all([
+    const [timelineData, stats, mapPoints] = await Promise.all([
       getTimelineData(),
       getDashboardStats(),
+      getMapPoints(),
       getMapPoints(),
     ]);
 
@@ -45,8 +54,18 @@ export default async function Home() {
                   global climate
                 </span>
                 ,{" "}
+                The state of the world in the last 24 hours. Real-time
+                monitoring of{" "}
+                <span className="text-blue-400 font-medium">
+                  global climate
+                </span>
+                ,{" "}
                 <span className="text-red-400 font-medium">
                   natural disasters
+                </span>
+                ,{" "}
+                <span className="text-emerald-400 font-medium">
+                  global news
                 </span>
                 ,{" "}
                 <span className="text-emerald-400 font-medium">
@@ -93,13 +112,29 @@ export default async function Home() {
             icon={<Thermometer className="w-5 h-5 text-orange-400" />}
             colorClass="text-orange-400"
             trend="Climate Crisis"
+        {/* Planet Control Center Metrics */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          <MetricHighlight
+            key="temp-anomaly"
+            label="Global Temp Anomaly"
+            value={`+${stats.tempAnomaly}°C`}
+            subValue="Above 1850-1900 avg"
+            icon={<Thermometer className="w-5 h-5 text-orange-400" />}
+            colorClass="text-orange-400"
+            trend="Climate Crisis"
           />
+          <MetricHighlight
+            key="disaster-alerts"
+            label="Active Disaster Alerts"
           <MetricHighlight
             key="disaster-alerts"
             label="Active Disaster Alerts"
             value={stats.disasterCount}
             subValue={`Severity Level ${stats.disasterSeverity}/5`}
+            subValue={`Severity Level ${stats.disasterSeverity}/5`}
             icon={<ShieldAlert className="w-5 h-5 text-red-400" />}
+            colorClass="text-red-400"
+            trend="Crisis Monitor"
             colorClass="text-red-400"
             trend="Crisis Monitor"
           />
@@ -117,16 +152,38 @@ export default async function Home() {
             label="Market Trend"
             value={`${stats.marketTrend > 0 ? "+" : ""}${stats.marketTrend.toFixed(2)}%`}
             subValue="Avg. World Indices"
+          <MetricHighlight
+            key="news-sentiment"
+            label="Global Sentiment"
+            value={`${stats.newsSentiment}%`}
+            subValue="Overall News Mood"
+            icon={<Smile className="w-5 h-5 text-emerald-400" />}
+            colorClass="text-emerald-400"
+            trend="Positive Pulse"
+          />
+          <MetricHighlight
+            key="market-trend"
+            label="Market Trend"
+            value={`${stats.marketTrend > 0 ? "+" : ""}${stats.marketTrend.toFixed(2)}%`}
+            subValue="Avg. World Indices"
             icon={<TrendingUp className="w-5 h-5 text-yellow-400" />}
+            colorClass="text-yellow-400"
+            trend="24h Performance"
             colorClass="text-yellow-400"
             trend="24h Performance"
           />
           <MetricHighlight
             key="astro-events"
             label="Astronomy Events"
+          <MetricHighlight
+            key="astro-events"
+            label="Astronomy Events"
             value={stats.astroCount}
             subValue="Observation alerts"
+            subValue="Observation alerts"
             icon={<Moon className="w-5 h-5 text-purple-400" />}
+            colorClass="text-purple-400"
+            trend="Cosmic Activity"
             colorClass="text-purple-400"
             trend="Cosmic Activity"
           />
@@ -143,8 +200,20 @@ export default async function Home() {
           <GlobalMap points={mapPoints} />
         </section>
 
+        {/* Interactive Global Monitor */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Globe className="w-5 h-5 text-blue-400" />
+            <h2 className="text-xl font-bold text-white tracking-tight">
+              Interactive Global Monitor
+            </h2>
+          </div>
+          <GlobalMap points={mapPoints} />
+        </section>
+
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           <DashboardCard
+            key="card-climate"
             key="card-climate"
             title="Climate"
             description="Conditions & alerts"
@@ -154,6 +223,7 @@ export default async function Home() {
           />
           <DashboardCard
             key="card-disasters"
+            key="card-disasters"
             title="Disasters"
             description="Recent reports"
             href="/disasters"
@@ -161,6 +231,7 @@ export default async function Home() {
             bgClass="bg-red-950/20 hover:bg-red-900/30 border-red-900/50"
           />
           <DashboardCard
+            key="card-news"
             key="card-news"
             title="News"
             description="Global headlines"
@@ -170,6 +241,7 @@ export default async function Home() {
           />
           <DashboardCard
             key="card-finance"
+            key="card-finance"
             title="Finance"
             description="Market indices"
             href="/finance"
@@ -177,6 +249,7 @@ export default async function Home() {
             bgClass="bg-yellow-950/20 hover:bg-yellow-900/30 border-yellow-900/50"
           />
           <DashboardCard
+            key="card-astronomy"
             key="card-astronomy"
             title="Astronomy"
             description="Alerts & phenomena"
@@ -215,6 +288,17 @@ export default async function Home() {
               }),
             }))}
           />
+          <TimelineClient
+            items={timelineData.map((item, idx) => ({
+              id: `${item.category}-${item.id}-${idx}`,
+              category: item.category,
+              title: item.title,
+              time: formatDistanceToNow(item.timestamp, {
+                addSuffix: true,
+                locale: enUS,
+              }),
+            }))}
+          />
         </section>
       </div>
     );
@@ -234,11 +318,13 @@ export default async function Home() {
 }
 
 function MetricHighlight({
+function MetricHighlight({
   label,
   value,
   subValue,
   icon,
   trend,
+  colorClass,
   colorClass,
 }: {
   label: string;
@@ -247,13 +333,25 @@ function MetricHighlight({
   icon: React.ReactNode;
   trend: string;
   colorClass: string;
+  colorClass: string;
 }) {
   return (
     <div className="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between hover:border-slate-700 transition-all group relative overflow-hidden backdrop-blur-md shadow-lg hover:shadow-cyan-500/5">
       <div className="absolute top-0 right-0 w-32 h-32 bg-current/5 rounded-full -translate-y-16 translate-x-16 blur-2xl group-hover:scale-150 transition-transform duration-700" />
+    <div className="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between hover:border-slate-700 transition-all group relative overflow-hidden backdrop-blur-md shadow-lg hover:shadow-cyan-500/5">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-current/5 rounded-full -translate-y-16 translate-x-16 blur-2xl group-hover:scale-150 transition-transform duration-700" />
       <div className="flex justify-between items-start mb-4 relative z-10">
         <div className="p-2.5 bg-slate-800/90 rounded-xl border border-slate-700/50 shadow-inner group-hover:bg-slate-800 transition-colors">
+        <div className="p-2.5 bg-slate-800/90 rounded-xl border border-slate-700/50 shadow-inner group-hover:bg-slate-800 transition-colors">
           {icon}
+        </div>
+        <div className="flex flex-col items-end">
+          <span className="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-1">
+            {trend}
+          </span>
+          <div className="flex gap-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          </div>
         </div>
         <div className="flex flex-col items-end">
           <span className="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-1">
@@ -269,12 +367,21 @@ function MetricHighlight({
           <h4
             className={`text-3xl font-black ${colorClass} tracking-tighter tabular-nums`}
           >
+          <h4
+            className={`text-3xl font-black ${colorClass} tracking-tighter tabular-nums`}
+          >
             {value}
           </h4>
         </div>
         <p className="text-[11px] font-bold text-slate-300 mt-1 uppercase tracking-wider group-hover:text-white transition-colors">
+        <p className="text-[11px] font-bold text-slate-300 mt-1 uppercase tracking-wider group-hover:text-white transition-colors">
           {label}
         </p>
+        {subValue && (
+          <p className="text-[10px] text-slate-500 font-medium truncate mt-0.5">
+            {subValue}
+          </p>
+        )}
         {subValue && (
           <p className="text-[10px] text-slate-500 font-medium truncate mt-0.5">
             {subValue}
@@ -357,6 +464,30 @@ function TimelineItem({
       color: "bg-purple-500/10 text-purple-400 border-purple-500/20",
       icon: <Moon className="w-3.5 h-3.5" />,
     },
+  const categoryConfig: Record<
+    string,
+    { color: string; icon: React.ReactNode }
+  > = {
+    climate: {
+      color: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+      icon: <CloudRain className="w-3.5 h-3.5" />,
+    },
+    disaster: {
+      color: "bg-red-500/10 text-red-400 border-red-500/20",
+      icon: <ShieldAlert className="w-3.5 h-3.5" />,
+    },
+    news: {
+      color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+      icon: <Newspaper className="w-3.5 h-3.5" />,
+    },
+    finance: {
+      color: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+      icon: <TrendingUp className="w-3.5 h-3.5" />,
+    },
+    astronomy: {
+      color: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+      icon: <Moon className="w-3.5 h-3.5" />,
+    },
   };
 
   return (
@@ -368,9 +499,13 @@ function TimelineItem({
         <div className="flex flex-wrap items-center gap-3 mb-1.5">
           <div
             className={`flex items-center gap-2 text-[10px] font-black px-2 py-0.5 rounded-md border tracking-wider ${categoryConfig[category]?.color || "bg-slate-800 text-slate-300"}`}
+          <div
+            className={`flex items-center gap-2 text-[10px] font-black px-2 py-0.5 rounded-md border tracking-wider ${categoryConfig[category]?.color || "bg-slate-800 text-slate-300"}`}
           >
             {categoryConfig[category]?.icon}
+            {categoryConfig[category]?.icon}
             {category.toUpperCase()}
+          </div>
           </div>
           <span className="text-xs text-slate-500 font-semibold">{time}</span>
         </div>
