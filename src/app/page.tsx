@@ -76,6 +76,7 @@ export default async function Home() {
         {/* Planet Control Center Metrics */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           <MetricHighlight
+            key="temp-anomaly"
             label="Global Temp Anomaly"
             value={`+${stats.tempAnomaly}°C`}
             subValue="Above 1850-1900 avg"
@@ -84,6 +85,7 @@ export default async function Home() {
             trend="Climate Crisis"
           />
           <MetricHighlight
+            key="disaster-alerts"
             label="Active Disaster Alerts"
             value={stats.disasterCount}
             subValue={`Severity Level ${stats.disasterSeverity}/5`}
@@ -92,6 +94,7 @@ export default async function Home() {
             trend="Crisis Monitor"
           />
           <MetricHighlight
+            key="news-sentiment"
             label="Global Sentiment"
             value={`${stats.newsSentiment}%`}
             subValue="Overall News Mood"
@@ -100,6 +103,7 @@ export default async function Home() {
             trend="Positive Pulse"
           />
           <MetricHighlight
+            key="market-trend"
             label="Market Trend"
             value={`${stats.marketTrend > 0 ? "+" : ""}${stats.marketTrend.toFixed(2)}%`}
             subValue="Avg. World Indices"
@@ -108,6 +112,7 @@ export default async function Home() {
             trend="24h Performance"
           />
           <MetricHighlight
+            key="astro-events"
             label="Astronomy Events"
             value={stats.astroCount}
             subValue="Observation alerts"
@@ -128,6 +133,7 @@ export default async function Home() {
 
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           <DashboardCard
+            key="card-climate"
             title="Climate"
             description="Conditions & alerts"
             href="/climate"
@@ -135,6 +141,7 @@ export default async function Home() {
             bgClass="bg-blue-950/20 hover:bg-blue-900/30 border-blue-900/50"
           />
           <DashboardCard
+            key="card-disasters"
             title="Disasters"
             description="Recent reports"
             href="/disasters"
@@ -142,6 +149,7 @@ export default async function Home() {
             bgClass="bg-red-950/20 hover:bg-red-900/30 border-red-900/50"
           />
           <DashboardCard
+            key="card-news"
             title="News"
             description="Global headlines"
             href="/news"
@@ -149,6 +157,7 @@ export default async function Home() {
             bgClass="bg-emerald-950/20 hover:bg-emerald-900/30 border-emerald-900/50"
           />
           <DashboardCard
+            key="card-finance"
             title="Finance"
             description="Market indices"
             href="/finance"
@@ -156,6 +165,7 @@ export default async function Home() {
             bgClass="bg-yellow-950/20 hover:bg-yellow-900/30 border-yellow-900/50"
           />
           <DashboardCard
+            key="card-astronomy"
             title="Astronomy"
             description="Alerts & phenomena"
             href="/astronomy"

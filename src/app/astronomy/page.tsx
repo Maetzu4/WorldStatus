@@ -191,7 +191,7 @@ export default async function AstronomyPage() {
           </div>
           <div className="divide-y divide-slate-800/50">
             {events.length > 0 ? (
-              events.slice(0, 20).map((event, idx) => {
+              events.slice(0, 20).map((event) => {
                 const badge = eventBadge[event.event] || defaultBadge;
                 const title =
                   event.extra_info?.title ||
@@ -203,7 +203,7 @@ export default async function AstronomyPage() {
 
                 return (
                   <div
-                    key={idx}
+                    key={event.id}
                     className="p-4 sm:p-6 hover:bg-slate-800/30 transition-colors"
                   >
                     <div className="flex flex-col sm:flex-row gap-4 items-start">

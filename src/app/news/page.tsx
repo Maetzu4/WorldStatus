@@ -135,9 +135,9 @@ export default async function NewsPage() {
           </div>
           <div className="divide-y divide-slate-800/50">
             {articles.length > 0 ? (
-              articles.slice(0, 20).map((article, idx) => (
+              articles.slice(0, 20).map((article) => (
                 <a
-                  key={idx}
+                  key={article.id}
                   href={article.url}
                   target="_blank"
                   rel="noopener noreferrer"
