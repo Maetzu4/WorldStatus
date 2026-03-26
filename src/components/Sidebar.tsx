@@ -30,15 +30,8 @@ export default function Sidebar() {
     () => false
   );
   
-  // Safe hook call - will be corrected on the client
-  let pathname = "";
-  try {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    pathname = usePathname() || "";
-  } catch (e) {
-    // Silent fail during build/prerender
-  }
-
+  const pathname = usePathname() || "";
+  
   // Return a non-interactive shell during SSR to avoid hook issues and focus on layout
   if (!mounted) {
     return (
