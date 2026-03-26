@@ -19,6 +19,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { enUS } from "date-fns/locale";
 import GlobalMap from "@/components/Map";
+import TimelineClient from "@/components/TimelineClient";
 
 export const dynamic = "force-dynamic";
 
