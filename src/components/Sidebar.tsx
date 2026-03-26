@@ -1,5 +1,6 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -20,8 +21,35 @@ const navItems = [
   { href: "/astronomy", label: "Astronomy", icon: Moon },
 ];
 
+const emptySubscribe = () => () => {};
+
 export default function Sidebar() {
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
   const pathname = usePathname();
+
+  // Return a non-interactive shell during SSR to avoid hook issues and focus on layout
+  if (!mounted) {
+    return (
+      <aside className="w-64 bg-slate-900 border-r border-slate-800 hidden md:flex flex-col h-screen sticky top-0">
+        <div className="p-6">
+          <h1 className="text-2xl font-bold from-blue-400 to-indigo-500 bg-clip-text">
+            World Status
+          </h1>
+          <p className="text-sm text-slate-400 mt-2">24h Global Monitor</p>
+        </div>
+        <nav className="flex-1 px-4 space-y-2 mt-4" />
+        <div className="p-6 border-t border-slate-800/50">
+          <div className="text-xs text-slate-500 text-center uppercase tracking-tighter font-bold">
+            Initializing...
+          </div>
+        </div>
+      </aside>
+    );
+  }
 
   return (
     <aside className="w-64 bg-slate-900 border-r border-slate-800 hidden md:flex flex-col h-screen sticky top-0">
