@@ -1,10 +1,5 @@
 "use client";
 
-import { Inter } from "next/font/google";
-import { AlertTriangle } from "lucide-react";
-
-const inter = Inter({ subsets: ["latin"] });
-
 export default function GlobalError({
   error,
   reset,
@@ -12,14 +7,13 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  console.error(error);
   return (
     <html lang="en" className="dark">
-      <body
-        className={`${inter.className} bg-slate-950 text-slate-50 min-h-screen flex flex-col items-center justify-center`}
-      >
+      <body className="bg-slate-950 text-slate-50 min-h-screen flex flex-col items-center justify-center font-sans">
         <div className="p-8 max-w-xl mx-auto text-center space-y-6 bg-slate-900 border border-slate-800 rounded-3xl shadow-xl">
-          <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <AlertTriangle className="w-8 h-8 text-red-500" />
+          <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto mb-6 text-red-500 font-bold text-2xl">
+            !
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-white">
             System Error
