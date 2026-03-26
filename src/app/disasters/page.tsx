@@ -144,11 +144,11 @@ export default async function DisastersPage() {
           </div>
           <div className="divide-y divide-slate-800/50">
             {disasters.length > 0 ? (
-              disasters.slice(0, 20).map((disaster, idx) => {
+              disasters.slice(0, 20).map((disaster) => {
                 const sev = severityLabel(disaster.severity);
                 return (
                   <a
-                    key={idx}
+                    key={disaster.id}
                     href={disaster.url}
                     target="_blank"
                     rel="noopener noreferrer"

@@ -8,18 +8,23 @@ import {
   ArrowRight,
   Activity,
   Globe,
+  Thermometer,
+  Smile,
 } from "lucide-react";
-import { getTimelineData, getDashboardStats } from "@/lib/dashboard";
+import { getTimelineData, getDashboardStats, getMapPoints } from "@/lib/dashboard";
 import { formatDistanceToNow } from "date-fns";
 import { enUS } from "date-fns/locale";
+import GlobalMap from "@/components/Map";
+import TimelineClient from "@/components/TimelineClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
   try {
-    const [timelineData, stats] = await Promise.all([
+    const [timelineData, stats, mapPoints] = await Promise.all([
       getTimelineData(),
       getDashboardStats(),
+      getMapPoints(),
     ]);
 
     return (
@@ -69,41 +74,87 @@ export default async function Home() {
           </div>
         </header>
 
-        {/* Global Highlights Section */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatsCard
-            label="News Volume"
-            value={stats.newsCount}
-            icon={<Newspaper className="w-5 h-5 text-emerald-400" />}
-            trend="Global Headlines"
+        {/* Planet Control Center Metrics */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+          <MetricHighlight
+            key="temp-anomaly"
+            label="Global Temp Anomaly"
+            value={`+${stats.tempAnomaly}°C`}
+            subValue="Above 1850-1900 avg"
+            icon={<Thermometer className="w-5 h-5 text-orange-400" />}
+            colorClass="text-orange-400"
+            trend="Climate Crisis"
+            glowColor="bg-orange-500/20"
+            magnitude={Math.min(100, stats.tempAnomaly * 50)}
+            isCritical={stats.tempAnomaly > 1.2}
+            accentBorder="border-t-orange-500"
           />
-          <StatsCard
-            label="Disaster Alerts"
+          <MetricHighlight
+            key="disaster-alerts"
+            label="Active Disaster Alerts"
             value={stats.disasterCount}
+            subValue={`Severity Level ${stats.disasterSeverity}/5`}
             icon={<ShieldAlert className="w-5 h-5 text-red-400" />}
-            trend="Recent Reports"
+            colorClass="text-red-400"
+            trend="Crisis Monitor"
+            glowColor="bg-red-500/20"
+            magnitude={Math.min(100, stats.disasterCount * 10)}
+            isCritical={stats.disasterCount >= 3}
+            accentBorder="border-t-red-500"
           />
-          <StatsCard
-            label="Market Pulse"
-            value={
-              stats.topMover
-                ? `${stats.topMover.change > 0 ? "+" : ""}${stats.topMover.change}%`
-                : "0%"
-            }
-            subValue={stats.topMover?.name}
+          <MetricHighlight
+            key="news-sentiment"
+            label="Global Sentiment"
+            value={`${stats.newsSentiment}%`}
+            subValue="Overall News Mood"
+            icon={<Smile className="w-5 h-5 text-emerald-400" />}
+            colorClass="text-emerald-400"
+            trend="Positive Pulse"
+            glowColor="bg-emerald-500/20"
+            magnitude={stats.newsSentiment}
+            isCritical={stats.newsSentiment < 40}
+            accentBorder="border-t-emerald-500"
+          />
+          <MetricHighlight
+            key="market-trend"
+            label="Market Trend"
+            value={`${stats.marketTrend > 0 ? "+" : ""}${stats.marketTrend.toFixed(2)}%`}
+            subValue="Avg. World Indices"
             icon={<TrendingUp className="w-5 h-5 text-yellow-400" />}
-            trend="Top Index Mover"
+            colorClass="text-yellow-400"
+            trend="24h Performance"
+            glowColor="bg-yellow-500/20"
+            magnitude={Math.min(100, Math.abs(stats.marketTrend) * 20)}
+            isCritical={stats.marketTrend < -2}
+            accentBorder="border-t-yellow-500"
           />
-          <StatsCard
-            label="Astro Events"
+          <MetricHighlight
+            key="astro-events"
+            label="Astronomy Events"
             value={stats.astroCount}
+            subValue="Observation alerts"
             icon={<Moon className="w-5 h-5 text-purple-400" />}
-            trend="Atmospheric Activity"
+            colorClass="text-purple-400"
+            trend="Cosmic Activity"
+            glowColor="bg-purple-500/20"
+            magnitude={Math.min(100, stats.astroCount * 15)}
+            isCritical={false}
+            accentBorder="border-t-purple-500"
           />
+        </section>
+
+        {/* Interactive Global Monitor */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Globe className="w-5 h-5 text-blue-400" />
+            <h2 className="text-xl font-bold text-white tracking-tight">Interactive Global Monitor</h2>
+          </div>
+          <GlobalMap points={mapPoints} />
         </section>
 
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           <DashboardCard
+            key="card-climate"
             title="Climate"
             description="Conditions & alerts"
             href="/climate"
@@ -111,6 +162,7 @@ export default async function Home() {
             bgClass="bg-blue-950/20 hover:bg-blue-900/30 border-blue-900/50"
           />
           <DashboardCard
+            key="card-disasters"
             title="Disasters"
             description="Recent reports"
             href="/disasters"
@@ -118,6 +170,7 @@ export default async function Home() {
             bgClass="bg-red-950/20 hover:bg-red-900/30 border-red-900/50"
           />
           <DashboardCard
+            key="card-news"
             title="News"
             description="Global headlines"
             href="/news"
@@ -125,6 +178,7 @@ export default async function Home() {
             bgClass="bg-emerald-950/20 hover:bg-emerald-900/30 border-emerald-900/50"
           />
           <DashboardCard
+            key="card-finance"
             title="Finance"
             description="Market indices"
             href="/finance"
@@ -132,6 +186,7 @@ export default async function Home() {
             bgClass="bg-yellow-950/20 hover:bg-yellow-900/30 border-yellow-900/50"
           />
           <DashboardCard
+            key="card-astronomy"
             title="Astronomy"
             description="Alerts & phenomena"
             href="/astronomy"
@@ -158,29 +213,17 @@ export default async function Home() {
             </span>
           </div>
 
-          <div className="space-y-1 relative">
-            <div className="absolute left-[21px] top-4 bottom-4 w-px bg-slate-800 z-0" />
-            {timelineData.length > 0 ? (
-              timelineData.map((item, idx) => (
-                <TimelineItem
-                  key={`${item.category}-${item.id}-${idx}`}
-                  category={item.category}
-                  title={item.title}
-                  time={formatDistanceToNow(item.timestamp, {
-                    addSuffix: true,
-                    locale: enUS,
-                  })}
-                />
-              ))
-            ) : (
-              <div className="text-center py-12 space-y-4">
-                <Globe className="w-12 h-12 text-slate-700 mx-auto opacity-50" />
-                <p className="text-slate-500 font-medium">
-                  No significant events recorded in the last 24 hours.
-                </p>
-              </div>
-            )}
-          </div>
+          <TimelineClient
+            items={timelineData.map((item, idx) => ({
+              id: `${item.category}-${item.id}-${idx}`,
+              category: item.category,
+              title: item.title,
+              time: formatDistanceToNow(item.timestamp, {
+                addSuffix: true,
+                locale: enUS,
+              }),
+            }))}
+          />
         </section>
       </div>
     );
@@ -199,44 +242,73 @@ export default async function Home() {
   }
 }
 
-function StatsCard({
+function MetricHighlight({
   label,
   value,
   subValue,
   icon,
   trend,
+  colorClass,
+  glowColor,
+  magnitude,
+  isCritical,
+  accentBorder,
 }: {
   label: string;
   value: string | number;
   subValue?: string;
   icon: React.ReactNode;
   trend: string;
+  colorClass: string;
+  glowColor: string;
+  magnitude: number;
+  isCritical?: boolean;
+  accentBorder: string;
 }) {
   return (
-    <div className="bg-slate-900/40 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between hover:border-slate-700 transition-all group relative overflow-hidden shadow-lg hover:shadow-blue-500/5">
-      <div className="absolute top-0 right-0 w-24 h-24 from-white/5 to-transparent rounded-full -translate-y-12 translate-x-12 group-hover:scale-150 transition-transform duration-500" />
+    <div className={`bg-slate-900/60 border border-slate-800 ${accentBorder} border-t-[3px] p-5 rounded-2xl flex flex-col justify-between min-h-[180px] hover:border-slate-700 transition-all group relative overflow-hidden backdrop-blur-md shadow-lg hover:shadow-cyan-500/5`}>
+      <div className="absolute top-0 right-0 w-32 h-32 bg-current/5 rounded-full -translate-y-16 translate-x-16 blur-2xl group-hover:scale-150 transition-transform duration-700" />
       <div className="flex justify-between items-start mb-4 relative z-10">
-        <div className="p-2.5 bg-slate-800/80 rounded-xl border border-slate-700/50 shadow-inner group-hover:scale-110 transition-transform">
-          {icon}
+        <div className="relative">
+          {/* Radial glow behind icon */}
+          <div
+            className={`absolute inset-0 ${glowColor} rounded-xl blur-xl scale-150`}
+            style={{ animation: "glow-soft 3s ease-in-out infinite" }}
+          />
+          <div className={`relative p-2.5 bg-slate-800/90 rounded-xl border border-slate-700/50 shadow-inner group-hover:bg-slate-800 transition-colors ${isCritical ? "pulse-ring-wrapper" : ""}`}>
+            {icon}
+          </div>
         </div>
-        <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500">
-          {trend}
-        </span>
+        <div className="flex flex-col items-end">
+          <span className="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-1">
+            {trend}
+          </span>
+          <div className="flex gap-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          </div>
+        </div>
       </div>
       <div className="relative z-10">
         <div className="flex items-baseline gap-2 overflow-hidden">
-          <h4 className="text-3xl font-extrabold text-white tracking-tight">
+          <h4 className={`text-3xl font-black ${colorClass} tracking-tighter tabular-nums`}>
             {value}
           </h4>
-          {subValue && (
-            <span className="text-xs text-slate-400 font-medium truncate opacity-60 group-hover:opacity-100 transition-opacity">
-              {subValue}
-            </span>
-          )}
         </div>
-        <p className="text-[11px] font-bold text-slate-500 mt-1 uppercase tracking-wider">
+        <p className="text-[11px] font-bold text-slate-300 mt-1 uppercase tracking-wider group-hover:text-white transition-colors">
           {label}
         </p>
+        {subValue && (
+          <p className="text-[10px] text-slate-500 font-medium truncate mt-0.5">
+            {subValue}
+          </p>
+        )}
+        {/* Mini sparkline bar */}
+        <div className="mt-3 w-full bg-slate-800/60 rounded-full h-1 overflow-hidden">
+          <div
+            className={`h-full rounded-full ${colorClass.replace("text-", "bg-")} opacity-60 transition-all duration-700`}
+            style={{ width: `${Math.max(5, Math.min(100, magnitude))}%` }}
+          />
+        </div>
       </div>
     </div>
   );
@@ -281,41 +353,3 @@ function DashboardCard({
   );
 }
 
-function TimelineItem({
-  category,
-  title,
-  time,
-}: {
-  category: string;
-  title: string;
-  time: string;
-}) {
-  const badgeColors: Record<string, string> = {
-    clima: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-    desastre: "bg-red-500/10 text-red-400 border-red-500/20",
-    noticia: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-    finanzas: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
-    astronomía: "bg-purple-500/10 text-purple-400 border-purple-500/20",
-  };
-
-  return (
-    <div className="flex gap-4 p-4 rounded-xl hover:bg-slate-800/40 transition-all group cursor-pointer border border-transparent hover:border-slate-700/50 relative z-10">
-      <div className="flex flex-col items-center">
-        <div className="w-3 h-3 rounded-full border-2 border-slate-700 bg-slate-900 group-hover:border-blue-400 group-hover:scale-125 mt-2 transition-all shadow-sm" />
-      </div>
-      <div className="flex-1">
-        <div className="flex flex-wrap items-center gap-3 mb-1.5">
-          <span
-            className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md border tracking-wider ${badgeColors[category] || "bg-slate-800 text-slate-300"}`}
-          >
-            {category.toUpperCase()}
-          </span>
-          <span className="text-xs text-slate-500 font-semibold">{time}</span>
-        </div>
-        <p className="text-slate-200 font-medium group-hover:text-white transition-colors leading-snug">
-          {title}
-        </p>
-      </div>
-    </div>
-  );
-}

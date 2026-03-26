@@ -32,10 +32,24 @@ async function getNewsData(): Promise<NewsArticle[]> {
 }
 
 const categoryBadge: Record<string, string> = {
+  news: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
   noticia: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  climate: "bg-blue-500/10 text-blue-400 border-blue-500/20",
   clima: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  finance: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
   finanzas: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
   general: "bg-slate-500/10 text-slate-400 border-slate-500/20",
+};
+
+const translateCategory = (cat: string) => {
+  const map: Record<string, string> = {
+    noticia: "news",
+    clima: "climate",
+    finanzas: "finance",
+    desastre: "disaster",
+    astronomia: "astronomy"
+  };
+  return map[cat] || cat;
 };
 
 export default async function NewsPage() {
@@ -121,9 +135,9 @@ export default async function NewsPage() {
           </div>
           <div className="divide-y divide-slate-800/50">
             {articles.length > 0 ? (
-              articles.slice(0, 20).map((article, idx) => (
+              articles.slice(0, 20).map((article) => (
                 <a
-                  key={idx}
+                  key={article.id}
                   href={article.url}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -141,7 +155,7 @@ export default async function NewsPage() {
                             categoryBadge.general
                           }`}
                         >
-                          {article.category.toUpperCase()}
+                          {translateCategory(article.category).toUpperCase()}
                         </span>
                         {article.source && (
                           <span className="text-xs text-slate-500">
