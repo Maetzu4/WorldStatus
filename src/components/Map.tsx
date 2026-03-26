@@ -120,43 +120,28 @@ export default function GlobalMap({ points }: { points: MapPoint[] }) {
           attribution='&copy; <a href="https://carto.com/">CARTO</a>'
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
-        {points.map((point) => {
-          const style = markerStyles[point.type] || markerStyles.news;
-          return (
-            <CircleMarker
-              key={point.id}
-              center={[point.lat, point.lon]}
-              radius={style.radius}
-              pathOptions={{
-                fillColor: style.fillColor,
-                color: style.color,
-                fillOpacity: 0.8,
-                weight: 2,
-                className:
-                  point.type === "disaster" ? "disaster-marker-pulse" : "",
-              }}
-            >
-              <Popup>
-                <div className="p-1">
-                  <strong className="block mb-1 text-slate-100">
-                    {point.title}
-                  </strong>
-                  <p className="text-sm text-slate-300 mb-2">
-                    {point.description}
-                  </p>
-                  <a
-                    href={point.link}
-                    className="text-xs text-blue-400 hover:underline"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    View details
-                  </a>
-                </div>
-              </Popup>
-            </CircleMarker>
-          );
-        })}
+        {points.map((point) => (
+          <Marker key={point.id} position={[point.lat, point.lon]}>
+            <Popup>
+              <div className="p-1">
+                <strong className="block mb-1 text-slate-900">
+                  {point.title}
+                </strong>
+                <p className="text-sm text-slate-600 mb-2">
+                  {point.description}
+                </p>
+                <a
+                  href={point.link}
+                  className="text-xs text-blue-600 hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View details
+                </a>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
       </MapContainer>
 
       {/* Inline legend */}

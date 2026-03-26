@@ -11,11 +11,14 @@ import {
   Thermometer,
   Smile,
 } from "lucide-react";
-import { getTimelineData, getDashboardStats, getMapPoints } from "@/lib/dashboard";
+import {
+  getTimelineData,
+  getDashboardStats,
+  getMapPoints,
+} from "@/lib/dashboard";
 import { formatDistanceToNow } from "date-fns";
 import { enUS } from "date-fns/locale";
 import GlobalMap from "@/components/Map";
-import TimelineClient from "@/components/TimelineClient";
 
 export const dynamic = "force-dynamic";
 
@@ -36,14 +39,20 @@ export default async function Home() {
                 World Status
               </h1>
               <p className="text-lg text-slate-300 max-w-3xl leading-relaxed">
-                The state of the world in the last 24 hours. Real-time monitoring
-                of{" "}
-                <span className="text-blue-400 font-medium">global climate</span>,{" "}
+                The state of the world in the last 24 hours. Real-time
+                monitoring of{" "}
+                <span className="text-blue-400 font-medium">
+                  global climate
+                </span>
+                ,{" "}
                 <span className="text-red-400 font-medium">
                   natural disasters
                 </span>
                 ,{" "}
-                <span className="text-emerald-400 font-medium">global news</span>,{" "}
+                <span className="text-emerald-400 font-medium">
+                  global news
+                </span>
+                ,{" "}
                 <span className="text-yellow-400 font-medium">
                   market indices
                 </span>
@@ -84,10 +93,6 @@ export default async function Home() {
             icon={<Thermometer className="w-5 h-5 text-orange-400" />}
             colorClass="text-orange-400"
             trend="Climate Crisis"
-            glowColor="bg-orange-500/20"
-            magnitude={Math.min(100, stats.tempAnomaly * 50)}
-            isCritical={stats.tempAnomaly > 1.2}
-            accentBorder="border-t-orange-500"
           />
           <MetricHighlight
             key="disaster-alerts"
@@ -97,10 +102,6 @@ export default async function Home() {
             icon={<ShieldAlert className="w-5 h-5 text-red-400" />}
             colorClass="text-red-400"
             trend="Crisis Monitor"
-            glowColor="bg-red-500/20"
-            magnitude={Math.min(100, stats.disasterCount * 10)}
-            isCritical={stats.disasterCount >= 3}
-            accentBorder="border-t-red-500"
           />
           <MetricHighlight
             key="news-sentiment"
@@ -110,10 +111,6 @@ export default async function Home() {
             icon={<Smile className="w-5 h-5 text-emerald-400" />}
             colorClass="text-emerald-400"
             trend="Positive Pulse"
-            glowColor="bg-emerald-500/20"
-            magnitude={stats.newsSentiment}
-            isCritical={stats.newsSentiment < 40}
-            accentBorder="border-t-emerald-500"
           />
           <MetricHighlight
             key="market-trend"
@@ -123,10 +120,6 @@ export default async function Home() {
             icon={<TrendingUp className="w-5 h-5 text-yellow-400" />}
             colorClass="text-yellow-400"
             trend="24h Performance"
-            glowColor="bg-yellow-500/20"
-            magnitude={Math.min(100, Math.abs(stats.marketTrend) * 20)}
-            isCritical={stats.marketTrend < -2}
-            accentBorder="border-t-yellow-500"
           />
           <MetricHighlight
             key="astro-events"
@@ -136,10 +129,6 @@ export default async function Home() {
             icon={<Moon className="w-5 h-5 text-purple-400" />}
             colorClass="text-purple-400"
             trend="Cosmic Activity"
-            glowColor="bg-purple-500/20"
-            magnitude={Math.min(100, stats.astroCount * 15)}
-            isCritical={false}
-            accentBorder="border-t-purple-500"
           />
         </section>
 
@@ -147,7 +136,9 @@ export default async function Home() {
         <section className="space-y-4">
           <div className="flex items-center gap-2 mb-2">
             <Globe className="w-5 h-5 text-blue-400" />
-            <h2 className="text-xl font-bold text-white tracking-tight">Interactive Global Monitor</h2>
+            <h2 className="text-xl font-bold text-white tracking-tight">
+              Interactive Global Monitor
+            </h2>
           </div>
           <GlobalMap points={mapPoints} />
         </section>
@@ -249,10 +240,6 @@ function MetricHighlight({
   icon,
   trend,
   colorClass,
-  glowColor,
-  magnitude,
-  isCritical,
-  accentBorder,
 }: {
   label: string;
   value: string | number;
@@ -260,24 +247,13 @@ function MetricHighlight({
   icon: React.ReactNode;
   trend: string;
   colorClass: string;
-  glowColor: string;
-  magnitude: number;
-  isCritical?: boolean;
-  accentBorder: string;
 }) {
   return (
-    <div className={`bg-slate-900/60 border border-slate-800 ${accentBorder} border-t-[3px] p-5 rounded-2xl flex flex-col justify-between min-h-[180px] hover:border-slate-700 transition-all group relative overflow-hidden backdrop-blur-md shadow-lg hover:shadow-cyan-500/5`}>
+    <div className="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between hover:border-slate-700 transition-all group relative overflow-hidden backdrop-blur-md shadow-lg hover:shadow-cyan-500/5">
       <div className="absolute top-0 right-0 w-32 h-32 bg-current/5 rounded-full -translate-y-16 translate-x-16 blur-2xl group-hover:scale-150 transition-transform duration-700" />
       <div className="flex justify-between items-start mb-4 relative z-10">
-        <div className="relative">
-          {/* Radial glow behind icon */}
-          <div
-            className={`absolute inset-0 ${glowColor} rounded-xl blur-xl scale-150`}
-            style={{ animation: "glow-soft 3s ease-in-out infinite" }}
-          />
-          <div className={`relative p-2.5 bg-slate-800/90 rounded-xl border border-slate-700/50 shadow-inner group-hover:bg-slate-800 transition-colors ${isCritical ? "pulse-ring-wrapper" : ""}`}>
-            {icon}
-          </div>
+        <div className="p-2.5 bg-slate-800/90 rounded-xl border border-slate-700/50 shadow-inner group-hover:bg-slate-800 transition-colors">
+          {icon}
         </div>
         <div className="flex flex-col items-end">
           <span className="text-[10px] uppercase font-black tracking-widest text-slate-500 mb-1">
@@ -290,7 +266,9 @@ function MetricHighlight({
       </div>
       <div className="relative z-10">
         <div className="flex items-baseline gap-2 overflow-hidden">
-          <h4 className={`text-3xl font-black ${colorClass} tracking-tighter tabular-nums`}>
+          <h4
+            className={`text-3xl font-black ${colorClass} tracking-tighter tabular-nums`}
+          >
             {value}
           </h4>
         </div>
@@ -302,13 +280,6 @@ function MetricHighlight({
             {subValue}
           </p>
         )}
-        {/* Mini sparkline bar */}
-        <div className="mt-3 w-full bg-slate-800/60 rounded-full h-1 overflow-hidden">
-          <div
-            className={`h-full rounded-full ${colorClass.replace("text-", "bg-")} opacity-60 transition-all duration-700`}
-            style={{ width: `${Math.max(5, Math.min(100, magnitude))}%` }}
-          />
-        </div>
       </div>
     </div>
   );
@@ -353,3 +324,60 @@ function DashboardCard({
   );
 }
 
+function TimelineItem({
+  category,
+  title,
+  time,
+}: {
+  category: string;
+  title: string;
+  time: string;
+}) {
+  const categoryConfig: Record<
+    string,
+    { color: string; icon: React.ReactNode }
+  > = {
+    climate: {
+      color: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+      icon: <CloudRain className="w-3.5 h-3.5" />,
+    },
+    disaster: {
+      color: "bg-red-500/10 text-red-400 border-red-500/20",
+      icon: <ShieldAlert className="w-3.5 h-3.5" />,
+    },
+    news: {
+      color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+      icon: <Newspaper className="w-3.5 h-3.5" />,
+    },
+    finance: {
+      color: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+      icon: <TrendingUp className="w-3.5 h-3.5" />,
+    },
+    astronomy: {
+      color: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+      icon: <Moon className="w-3.5 h-3.5" />,
+    },
+  };
+
+  return (
+    <div className="flex gap-4 p-4 rounded-xl hover:bg-slate-800/40 transition-all group cursor-pointer border border-transparent hover:border-slate-700/50 relative z-10">
+      <div className="flex flex-col items-center">
+        <div className="w-3 h-3 rounded-full border-2 border-slate-700 bg-slate-900 group-hover:border-blue-400 group-hover:scale-125 mt-2 transition-all shadow-sm" />
+      </div>
+      <div className="flex-1">
+        <div className="flex flex-wrap items-center gap-3 mb-1.5">
+          <div
+            className={`flex items-center gap-2 text-[10px] font-black px-2 py-0.5 rounded-md border tracking-wider ${categoryConfig[category]?.color || "bg-slate-800 text-slate-300"}`}
+          >
+            {categoryConfig[category]?.icon}
+            {category.toUpperCase()}
+          </div>
+          <span className="text-xs text-slate-500 font-semibold">{time}</span>
+        </div>
+        <p className="text-slate-200 font-medium group-hover:text-white transition-colors leading-snug">
+          {title}
+        </p>
+      </div>
+    </div>
+  );
+}
