@@ -3,25 +3,37 @@ import { logger } from './logger';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
-export const redis = new Redis(redisUrl, {
-  maxRetriesPerRequest: 3,
-  retryStrategy(times) {
-    const delay = Math.min(times * 50, 2000);
-    return delay;
-  },
-});
+const isBuildPhase = 
+  process.env.npm_lifecycle_event === 'build' || 
+  process.env.NODE_ENV?.includes('build');
 
-redis.on('error', (error) => {
-  logger.error({ error }, 'Redis connection error');
-});
+let redisInstance: Redis | null = null;
 
-redis.on('connect', () => {
-  logger.info('Connected to Redis');
-});
+if (!isBuildPhase) {
+  redisInstance = new Redis(redisUrl, {
+    maxRetriesPerRequest: 3,
+    retryStrategy(times) {
+      const delay = Math.min(times * 50, 2000);
+      return delay;
+    },
+  });
+
+  redisInstance.on('error', (error) => {
+    logger.error({ error }, 'Redis connection error');
+  });
+
+  redisInstance.on('connect', () => {
+    logger.info('Connected to Redis');
+  });
+}
+
+// Ensure backwards compatibility for current imports
+export const redis = redisInstance as Redis;
 
 export const getCache = async <T>(key: string): Promise<T | null> => {
+  if (!redisInstance) return null;
   try {
-    const data = await redis.get(key);
+    const data = await redisInstance.get(key);
     if (!data) return null;
     return JSON.parse(data) as T;
   } catch (error) {
@@ -31,8 +43,9 @@ export const getCache = async <T>(key: string): Promise<T | null> => {
 };
 
 export const setCache = async (key: string, value: unknown, ttlSeconds: number = 21600): Promise<void> => {
+  if (!redisInstance) return;
   try {
-    await redis.set(key, JSON.stringify(value), 'EX', ttlSeconds);
+    await redisInstance.set(key, JSON.stringify(value), 'EX', ttlSeconds);
   } catch (error) {
     logger.error({ key, error }, 'Error writing to Redis cache');
   }
