@@ -57,6 +57,44 @@ function severityLabel(severity: number | null): {
   };
 }
 
+const COMMON_COUNTRIES = [
+  "Indonesia", "California", "Japan", "Mexico", "Chile", "Turkey", "China",
+  "India", "Philippines", "Italy", "Greece", "USA", "United States", "Brazil",
+  "Australia", "New Zealand", "Pakistan", "Iran", "Colombia", "Peru", "Spain", "France"
+];
+
+function extractCountry(text: string): string | null {
+  if (!text) return null;
+  const lowerText = text.toLowerCase();
+  for (const country of COMMON_COUNTRIES) {
+    if (lowerText.includes(country.toLowerCase())) {
+      return country === "USA" || country === "California" ? "United States" : country;
+    }
+  }
+  return null;
+}
+
+type DisasterType = "Volcano" | "Hurricane" | "Flood" | "Wildfire" | "Earthquake" | "Other";
+
+function classifyDisaster(title: string, description: string | null): DisasterType {
+  const text = `${title} ${description || ""}`.toLowerCase();
+  if (text.includes("volcan") || text.includes("eruption") || text.includes("magma")) return "Volcano";
+  if (text.includes("huracan") || text.includes("hurricane") || text.includes("typhoon") || text.includes("cyclone") || text.includes("tornado") || text.includes("storm")) return "Hurricane";
+  if (text.includes("flood") || text.includes("inundación") || text.includes("inundacion") || text.includes("tsunami")) return "Flood";
+  if (text.includes("fire") || text.includes("wildfire") || text.includes("incendio") || text.includes("flames") || text.includes("fuego")) return "Wildfire";
+  if (text.includes("earthquake") || text.includes("terremoto") || text.includes("sismo") || text.includes("quake") || text.includes("tremor")) return "Earthquake";
+  return "Other";
+}
+
+const TYPE_EMOJIS: Record<DisasterType, string> = {
+  Volcano: "🌋",
+  Hurricane: "🌪",
+  Flood: "🌊",
+  Wildfire: "🔥",
+  Earthquake: "🌍",
+  Other: "⚠️"
+};
+
 export default async function DisastersPage() {
   const disasters = await getDisasterData();
 
@@ -65,6 +103,43 @@ export default async function DisastersPage() {
     (d) => d.severity !== null && d.severity >= 4,
   ).length;
   const latestEvent = disasters[0]?.title || "No recent reports";
+
+  // Data processing for new features
+  const typeCounts: Record<string, number> = {
+    Volcano: 0,
+    Hurricane: 0,
+    Flood: 0,
+    Wildfire: 0,
+    Earthquake: 0,
+  };
+
+  const countryHitMap: Record<string, number> = {};
+
+  const processedDisasters = disasters.map((d) => {
+    const dType = classifyDisaster(d.title, d.description);
+    if (dType !== "Other") {
+      typeCounts[dType] = (typeCounts[dType] || 0) + 1;
+    }
+
+    let country = d.country;
+    if (!country) {
+      country = extractCountry(d.title) || extractCountry(d.description || "");
+    }
+
+    if (country) {
+      // Normalize common duplicates
+      const normalized = country.toLowerCase() === "us" || country.toLowerCase() === "usa" ? "United States" : country;
+      countryHitMap[normalized] = (countryHitMap[normalized] || 0) + 1;
+    }
+
+    return { ...d, dType, matchedCountry: country };
+  });
+
+  const topRegions = Object.entries(countryHitMap)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3);
+    
+  const rankingMedals = ["1️⃣", "2️⃣", "3️⃣"];
 
   return (
     <div className="flex-1 p-8 overflow-y-auto w-full">
@@ -89,7 +164,7 @@ export default async function DisastersPage() {
           </p>
         </section>
 
-        {/* KPIs */}
+        {/* Existing General KPIs */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="relative group overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 p-6 transition-all hover:border-slate-700">
             <div className="absolute inset-0 from-red-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -135,6 +210,43 @@ export default async function DisastersPage() {
           </div>
         </div>
 
+        {/* New Disaster Breakdown & Rankings */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <section className="lg:col-span-2 space-y-4">
+            <h2 className="text-xl font-bold text-white px-2">Active Threats Summary</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {Object.entries(typeCounts).map(([type, count]) => (
+                <div key={type} className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4 flex items-center justify-between hover:border-slate-700 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{TYPE_EMOJIS[type as DisasterType]}</span>
+                    <span className="text-sm font-bold text-slate-300">{type}s</span>
+                  </div>
+                  <span className="text-xl font-black text-slate-100">{count}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <h2 className="text-xl font-bold text-white px-2">Top Affected Regions</h2>
+            <div className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-5 space-y-4">
+              {topRegions.length > 0 ? (
+                 topRegions.map(([region, hits], idx) => (
+                  <div key={region} className="flex items-center justify-between border-b border-slate-800/50 pb-3 last:border-0 last:pb-0">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">{rankingMedals[idx] || "🔹"}</span>
+                      <span className="text-slate-200 font-bold capitalize">{region}</span>
+                    </div>
+                    <span className="text-sm font-mono text-slate-400">{hits} alerts</span>
+                  </div>
+                ))
+              ) : (
+                <div className="text-sm text-slate-500 text-center py-4">No regional data available yet.</div>
+              )}
+            </div>
+          </section>
+        </div>
+
         {/* Disaster List */}
         <section className="rounded-3xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl overflow-hidden">
           <div className="p-6 border-b border-slate-800 flex justify-between items-center">
@@ -143,8 +255,8 @@ export default async function DisastersPage() {
             </h2>
           </div>
           <div className="divide-y divide-slate-800/50">
-            {disasters.length > 0 ? (
-              disasters.slice(0, 20).map((disaster, idx) => {
+            {processedDisasters.length > 0 ? (
+              processedDisasters.slice(0, 20).map((disaster, idx) => {
                 const sev = severityLabel(disaster.severity);
                 return (
                   <a
@@ -155,8 +267,8 @@ export default async function DisastersPage() {
                     className="block p-4 sm:p-6 hover:bg-slate-800/30 transition-colors"
                   >
                     <div className="flex flex-col sm:flex-row gap-4 items-start">
-                      <div className="w-12 h-12 rounded-full bg-red-950/50 flex items-center justify-center text-red-400 shrink-0">
-                        <ShieldAlert className="w-5 h-5" />
+                      <div className="w-12 h-12 rounded-full bg-slate-800/50 border border-slate-700/50 flex items-center justify-center text-2xl shrink-0">
+                        {TYPE_EMOJIS[disaster.dType]}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -168,6 +280,11 @@ export default async function DisastersPage() {
                           {disaster.source && (
                             <span className="text-xs text-slate-500">
                               {disaster.source}
+                            </span>
+                          )}
+                           {disaster.matchedCountry && (
+                            <span className="text-xs font-medium text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded">
+                              {disaster.matchedCountry}
                             </span>
                           )}
                           <span className="text-xs text-slate-600 flex items-center gap-1">
