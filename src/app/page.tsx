@@ -8,10 +8,11 @@ import {
   ArrowRight,
   Activity,
   Globe,
+  Thermometer,
 } from "lucide-react";
 import { getTimelineData, getDashboardStats } from "@/lib/dashboard";
-import { formatDistanceToNow } from "date-fns";
-import { enUS } from "date-fns/locale";
+import TimelineFilter from "@/components/TimelineFilter";
+import GlobalMap from "@/components/Map";
 
 export const dynamic = "force-dynamic";
 
@@ -69,36 +70,65 @@ export default async function Home() {
       </header>
 
       {/* Global Highlights Section */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatsCard
-          label="News Volume"
-          value={stats.newsCount}
-          icon={<Newspaper className="w-5 h-5 text-emerald-400" />}
-          trend="Global Headlines"
+          label="Global Temp"
+          value={stats.temperatureAnomaly >= 0 ? `+${stats.temperatureAnomaly.toFixed(1)}°C` : `${stats.temperatureAnomaly.toFixed(1)}°C`}
+          icon={<Thermometer className="w-5 h-5 text-orange-400" />}
+          trend="Anomaly"
+          color="orange"
         />
         <StatsCard
-          label="Disaster Alerts"
+          label="Active Alerts"
           value={stats.disasterCount}
-          icon={<ShieldAlert className="w-5 h-5 text-red-400" />}
-          trend="Recent Reports"
+          icon={<ShieldAlert className={`w-5 h-5 ${stats.disasterCount > 0 ? 'text-red-400 animate-pulse' : 'text-slate-400'}`} />}
+          trend="Disasters 24h"
+          color={stats.disasterCount > 0 ? "red" : "slate"}
         />
         <StatsCard
-          label="Market Pulse"
+          label="News Sentiment"
           value={
-            stats.topMover
-              ? `${stats.topMover.change > 0 ? "+" : ""}${stats.topMover.change}%`
-              : "0%"
+            <div className="flex gap-1 items-center tracking-tight">
+              <span className="text-emerald-400">{stats.newsSentiment.positive}%</span>
+              <span className="text-slate-500 text-sm font-light">/</span>
+              <span className="text-red-400">{stats.newsSentiment.negative}%</span>
+            </div>
           }
-          subValue={stats.topMover?.name}
-          icon={<TrendingUp className="w-5 h-5 text-yellow-400" />}
-          trend="Top Index Mover"
+          icon={<Newspaper className="w-5 h-5 text-emerald-400" />}
+          trend="Pos/Neg Split"
+          color="emerald"
         />
         <StatsCard
-          label="Astro Events"
-          value={stats.astroCount}
-          icon={<Moon className="w-5 h-5 text-purple-400" />}
-          trend="Atmospheric Activity"
+          label="Market Avg"
+          value={`${stats.marketTrend > 0 ? '+' : ''}${stats.marketTrend.toFixed(2)}%`}
+          subValue={stats.topMover?.name ? `${stats.topMover.name}` : ""}
+          icon={<TrendingUp className={`w-5 h-5 ${stats.marketTrend >= 0 ? 'text-emerald-400' : 'text-red-400'}`} />}
+          trend="Global Indices"
+          color={stats.marketTrend >= 0 ? "emerald" : "red"}
         />
+        <StatsCard
+          label="Events Today"
+          value={stats.astroCount}
+          subValue={stats.astroEventsToday[0] || "None visible"}
+          icon={<Moon className="w-5 h-5 text-purple-400" />}
+          trend="Astronomy"
+          color="purple"
+        />
+      </section>
+
+      {/* Map Section */}
+      <section className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full -translate-y-32 translate-x-32 blur-3xl pointer-events-none" />
+        <div className="flex justify-between items-center mb-6 relative z-10">
+          <div>
+            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+              <Globe className="w-6 h-6 text-indigo-400" />
+              Global Activity Map
+            </h2>
+            <p className="text-sm text-slate-400 mt-1">Live geographic tracker</p>
+          </div>
+        </div>
+        <GlobalMap points={stats.mapPoints} />
       </section>
 
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
@@ -157,29 +187,7 @@ export default async function Home() {
           </span>
         </div>
 
-        <div className="space-y-1 relative">
-          <div className="absolute left-[21px] top-4 bottom-4 w-px bg-slate-800 z-0" />
-          {timelineData.length > 0 ? (
-            timelineData.map((item, idx) => (
-              <TimelineItem
-                key={`${item.category}-${item.id}-${idx}`}
-                category={item.category}
-                title={item.title}
-                time={formatDistanceToNow(item.timestamp, {
-                  addSuffix: true,
-                  locale: enUS,
-                })}
-              />
-            ))
-          ) : (
-            <div className="text-center py-12 space-y-4">
-              <Globe className="w-12 h-12 text-slate-700 mx-auto opacity-50" />
-              <p className="text-slate-500 font-medium">
-                No significant events recorded in the last 24 hours.
-              </p>
-            </div>
-          )}
-        </div>
+        <TimelineFilter data={timelineData} />
       </section>
     </div>
   );
@@ -191,18 +199,31 @@ function StatsCard({
   subValue,
   icon,
   trend,
+  color = "blue",
 }: {
   label: string;
-  value: string | number;
+  value: React.ReactNode;
   subValue?: string;
   icon: React.ReactNode;
   trend: string;
+  color?: string;
 }) {
+  const shadowColors: Record<string, string> = {
+    orange: "hover:shadow-orange-500/10 group-hover:bg-orange-500/5 border-slate-800 hover:border-orange-500/50",
+    red: "hover:shadow-red-500/10 group-hover:bg-red-500/5 border-slate-800 hover:border-red-500/50",
+    emerald: "hover:shadow-emerald-500/10 group-hover:bg-emerald-500/5 border-slate-800 hover:border-emerald-500/50",
+    blue: "hover:shadow-blue-500/10 group-hover:bg-blue-500/5 border-slate-800 hover:border-blue-500/50",
+    purple: "hover:shadow-purple-500/10 group-hover:bg-purple-500/5 border-slate-800 hover:border-purple-500/50",
+    slate: "hover:shadow-slate-500/10 group-hover:bg-white/5 border-slate-800 hover:border-slate-500/50",
+  };
+
+  const bgGradient = shadowColors[color] || shadowColors.blue;
+
   return (
-    <div className="bg-slate-900/40 border border-slate-800 p-5 rounded-2xl flex flex-col justify-between hover:border-slate-700 transition-all group relative overflow-hidden shadow-lg hover:shadow-blue-500/5">
+    <div className={`bg-slate-900/40 border p-5 rounded-2xl flex flex-col justify-between transition-all group relative overflow-hidden shadow-lg hover:-translate-y-1 ${bgGradient}`}>
       <div className="absolute top-0 right-0 w-24 h-24 from-white/5 to-transparent rounded-full -translate-y-12 translate-x-12 group-hover:scale-150 transition-transform duration-500" />
       <div className="flex justify-between items-start mb-4 relative z-10">
-        <div className="p-2.5 bg-slate-800/80 rounded-xl border border-slate-700/50 shadow-inner group-hover:scale-110 transition-transform">
+        <div className={`p-2.5 bg-slate-800/80 rounded-xl border border-slate-700/50 shadow-inner group-hover:scale-110 transition-transform`}>
           {icon}
         </div>
         <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500">
@@ -267,41 +288,3 @@ function DashboardCard({
   );
 }
 
-function TimelineItem({
-  category,
-  title,
-  time,
-}: {
-  category: string;
-  title: string;
-  time: string;
-}) {
-  const badgeColors: Record<string, string> = {
-    clima: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-    desastre: "bg-red-500/10 text-red-400 border-red-500/20",
-    noticia: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-    finanzas: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
-    astronomía: "bg-purple-500/10 text-purple-400 border-purple-500/20",
-  };
-
-  return (
-    <div className="flex gap-4 p-4 rounded-xl hover:bg-slate-800/40 transition-all group cursor-pointer border border-transparent hover:border-slate-700/50 relative z-10">
-      <div className="flex flex-col items-center">
-        <div className="w-3 h-3 rounded-full border-2 border-slate-700 bg-slate-900 group-hover:border-blue-400 group-hover:scale-125 mt-2 transition-all shadow-sm" />
-      </div>
-      <div className="flex-1">
-        <div className="flex flex-wrap items-center gap-3 mb-1.5">
-          <span
-            className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md border tracking-wider ${badgeColors[category] || "bg-slate-800 text-slate-300"}`}
-          >
-            {category.toUpperCase()}
-          </span>
-          <span className="text-xs text-slate-500 font-semibold">{time}</span>
-        </div>
-        <p className="text-slate-200 font-medium group-hover:text-white transition-colors leading-snug">
-          {title}
-        </p>
-      </div>
-    </div>
-  );
-}
