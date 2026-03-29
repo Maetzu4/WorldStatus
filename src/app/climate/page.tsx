@@ -1,4 +1,15 @@
-import { MapPin, Droplets, ThermometerSun, Wind, TrendingUp, Sun, Snowflake, Zap, Bot, Navigation } from "lucide-react";
+import {
+  MapPin,
+  Droplets,
+  ThermometerSun,
+  Wind,
+  TrendingUp,
+  Sun,
+  Snowflake,
+  Zap,
+  Bot,
+  Navigation,
+} from "lucide-react";
 import { query } from "@/lib/db";
 import ClimateChart from "@/components/ClimateChart";
 
@@ -20,7 +31,7 @@ interface WeatherSnapshot {
 async function getClimateData(): Promise<WeatherSnapshot[]> {
   try {
     const res = await query<WeatherSnapshot>(
-      "SELECT * FROM weather_snapshots ORDER BY timestamp DESC LIMIT 500;"
+      "SELECT * FROM weather_snapshots ORDER BY timestamp DESC LIMIT 500;",
     );
     return res.rows;
   } catch (error) {
@@ -30,26 +41,32 @@ async function getClimateData(): Promise<WeatherSnapshot[]> {
 }
 
 // Generate human-readable automated insight
-function generateInsight(chartPoints: { time: string; temperature: number }[], globalAvgTemp: number): string {
-  if (chartPoints.length < 2) return "Global temperatures remain stable within tracking limits.";
-  
+function generateInsight(
+  chartPoints: { time: string; temperature: number }[],
+  globalAvgTemp: number,
+): string {
+  if (chartPoints.length < 2)
+    return "Global temperatures remain stable within tracking limits.";
+
   const oldest = chartPoints[0].temperature;
   const newest = chartPoints[chartPoints.length - 1].temperature;
   const delta = newest - oldest;
-  
+
   const absDelta = Math.abs(delta).toFixed(1);
   const trend = delta > 0 ? "risen" : "fallen";
-  
+
   let insight = `Global temperatures have ${trend} by ${absDelta}°C over the tracking period.`;
-  
+
   if (globalAvgTemp > 25) {
     insight += " A warming pattern is highly noticeable today.";
   } else if (globalAvgTemp < 10) {
-    insight += " A widespread cooling phenomenon continues across monitored hemispheres.";
+    insight +=
+      " A widespread cooling phenomenon continues across monitored hemispheres.";
   } else if (Math.abs(delta) < 0.3) {
-    insight = "Global temperatures remain steadily constrained within historical averages.";
+    insight =
+      "Global temperatures remain steadily constrained within historical averages.";
   }
-  
+
   return insight;
 }
 
@@ -79,10 +96,12 @@ export default async function ClimatePage() {
       if (t < coldest.val) coldest = { city: r.location_id, val: t };
     }
     const w = Number(r.wind_speed);
-    if (!isNaN(w) && w > windiest.val) windiest = { city: r.location_id, val: w };
-    
+    if (!isNaN(w) && w > windiest.val)
+      windiest = { city: r.location_id, val: w };
+
     const h = Number(r.humidity);
-    if (!isNaN(h) && h > mostHumid.val) mostHumid = { city: r.location_id, val: h };
+    if (!isNaN(h) && h > mostHumid.val)
+      mostHumid = { city: r.location_id, val: h };
   });
 
   // Handle empty database smoothly
@@ -94,12 +113,20 @@ export default async function ClimatePage() {
   // 3. Global Stats
   let latestGlobal = climateData.find((r) => r.location_id === "global");
   if (!latestGlobal) {
-    let tSum = 0, hSum = 0, wSum = 0, count = 0;
-    cityRecords.forEach(r => {
+    let tSum = 0,
+      hSum = 0,
+      wSum = 0,
+      count = 0;
+    cityRecords.forEach((r) => {
       const t = Number(r.temperature);
-      if (!isNaN(t)) { tSum += t; hSum += Number(r.humidity); wSum += Number(r.wind_speed); count++; }
+      if (!isNaN(t)) {
+        tSum += t;
+        hSum += Number(r.humidity);
+        wSum += Number(r.wind_speed);
+        count++;
+      }
     });
-    
+
     if (count > 0) {
       latestGlobal = {
         location_id: "global",
@@ -111,26 +138,35 @@ export default async function ClimatePage() {
         uvi: "--",
         weather_type: "computed",
         condition: "Computed Average",
-        source: "system"
+        source: "system",
       };
     } else {
       latestGlobal = {
         location_id: "global",
         timestamp: new Date(),
-        temperature: "--", humidity: "--", wind_speed: "--", 
-        pressure: "--", uvi: "--", weather_type: "unknown", 
-        condition: "Awaiting Data", source: "none"
+        temperature: "--",
+        humidity: "--",
+        wind_speed: "--",
+        pressure: "--",
+        uvi: "--",
+        weather_type: "unknown",
+        condition: "Awaiting Data",
+        source: "none",
       };
     }
   }
 
   // 4. Chart historical points
-  let chartPoints = [];
-  const globalHistory = climateData.filter(r => r.location_id === "global")
-    .map(r => ({
+  let chartPoints: { rawDate: Date; time: string; temperature: number }[] = [];
+  const globalHistory = climateData
+    .filter((r) => r.location_id === "global")
+    .map((r) => ({
       rawDate: new Date(r.timestamp),
-      time: new Date(r.timestamp).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
-      temperature: Number(r.temperature)
+      time: new Date(r.timestamp).toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+      }),
+      temperature: Number(r.temperature),
     }))
     .reverse(); // oldest to newest
 
@@ -138,23 +174,28 @@ export default async function ClimatePage() {
     chartPoints = globalHistory;
   } else if (cityRecords.length > 0) {
     // If no global history, just create a mock shape from cities for visualization
-    chartPoints = cityRecords.map(c => ({
-      rawDate: new Date(c.timestamp),
-      time: new Date(c.timestamp).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
-      temperature: Number(c.temperature)
-    })).sort((a,b) => a.rawDate.getTime() - b.rawDate.getTime()).slice(0, 15);
+    chartPoints = cityRecords
+      .map((c) => ({
+        rawDate: new Date(c.timestamp),
+        time: new Date(c.timestamp).toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+        }),
+        temperature: Number(c.temperature),
+      }))
+      .sort((a, b) => a.rawDate.getTime() - b.rawDate.getTime())
+      .slice(0, 15);
   }
 
   // 5. Automated Insight
   const avgTemp = Number(latestGlobal.temperature);
-  const insightText = isNaN(avgTemp) 
+  const insightText = isNaN(avgTemp)
     ? "Awaiting sensory data to generate predictive insights."
     : generateInsight(chartPoints, avgTemp);
 
   return (
     <div className="flex-1 p-8 overflow-y-auto w-full">
       <div className="max-w-6xl mx-auto space-y-10">
-        
         {/* Header Section */}
         <section className="space-y-4">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400">
@@ -170,12 +211,13 @@ export default async function ClimatePage() {
             </span>
           </h1>
           <p className="text-lg text-slate-400 max-w-2xl">
-            Real-time planetary metrics leveraging high-altitude monitoring and atmospheric models.
+            Real-time planetary metrics leveraging high-altitude monitoring and
+            atmospheric models.
           </p>
         </section>
 
         {/* AI Insight Bar */}
-        <div className="bg-gradient-to-r from-blue-950/40 to-indigo-950/40 border border-blue-900/50 rounded-2xl p-5 shadow-[0_0_30px_rgba(59,130,246,0.05)] backdrop-blur-xl flex items-start sm:items-center gap-4 animate-[fadeIn_0.5s_ease-out]">
+        <div className="from-blue-950/40 to-indigo-950/40 border border-blue-900/50 rounded-2xl p-5 shadow-[0_0_30px_rgba(59,130,246,0.05)] backdrop-blur-xl flex items-start sm:items-center gap-4 animate-[fadeIn_0.5s_ease-out]">
           <div className="p-3 bg-blue-500/10 rounded-xl">
             <Bot className="w-6 h-6 text-blue-400" />
           </div>
@@ -232,7 +274,8 @@ export default async function ClimatePage() {
               Avg Wind Speed
             </p>
             <p className="text-4xl font-black text-white tracking-tighter">
-              {latestGlobal.wind_speed} <span className="text-xl text-slate-500 font-semibold">km/h</span>
+              {latestGlobal.wind_speed}{" "}
+              <span className="text-xl text-slate-500 font-semibold">km/h</span>
             </p>
           </div>
 
@@ -254,7 +297,6 @@ export default async function ClimatePage() {
 
         {/* Chart & Extremes Row */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          
           {/* Main Chart */}
           <section className="xl:col-span-2 rounded-3xl border border-slate-800 bg-slate-900/40 p-6 relative overflow-hidden backdrop-blur-md">
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 rounded-full -translate-y-32 translate-x-32 blur-3xl" />
@@ -271,8 +313,10 @@ export default async function ClimatePage() {
 
           {/* Extremes (Comparisons) Sidebar */}
           <section className="space-y-4">
-            <h2 className="text-xl font-bold text-white px-2">Global Extremes</h2>
-            
+            <h2 className="text-xl font-bold text-white px-2">
+              Global Extremes
+            </h2>
+
             <div className="grid grid-cols-2 xl:grid-cols-1 gap-4">
               {/* Hottest */}
               <div className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4 flex items-center gap-4 hover:border-orange-500/30 transition-colors">
@@ -280,9 +324,15 @@ export default async function ClimatePage() {
                   <Sun className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Hottest City</p>
-                  <p className="text-lg font-black text-slate-200 truncate capitalize">{hottest.city}</p>
-                  <p className="text-orange-400 font-mono font-bold text-xl">{hottest.val}°C</p>
+                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                    Hottest City
+                  </p>
+                  <p className="text-lg font-black text-slate-200 truncate capitalize">
+                    {hottest.city}
+                  </p>
+                  <p className="text-orange-400 font-mono font-bold text-xl">
+                    {hottest.val}°C
+                  </p>
                 </div>
               </div>
 
@@ -292,9 +342,15 @@ export default async function ClimatePage() {
                   <Snowflake className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Coldest City</p>
-                  <p className="text-lg font-black text-slate-200 truncate capitalize">{coldest.city}</p>
-                  <p className="text-cyan-400 font-mono font-bold text-xl">{coldest.val}°C</p>
+                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                    Coldest City
+                  </p>
+                  <p className="text-lg font-black text-slate-200 truncate capitalize">
+                    {coldest.city}
+                  </p>
+                  <p className="text-cyan-400 font-mono font-bold text-xl">
+                    {coldest.val}°C
+                  </p>
                 </div>
               </div>
 
@@ -304,9 +360,15 @@ export default async function ClimatePage() {
                   <Navigation className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Windiest</p>
-                  <p className="text-lg font-black text-slate-200 truncate capitalize">{windiest.city}</p>
-                  <p className="text-teal-400 font-mono font-bold text-xl">{windiest.val} km/h</p>
+                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                    Windiest
+                  </p>
+                  <p className="text-lg font-black text-slate-200 truncate capitalize">
+                    {windiest.city}
+                  </p>
+                  <p className="text-teal-400 font-mono font-bold text-xl">
+                    {windiest.val} km/h
+                  </p>
                 </div>
               </div>
 
@@ -316,20 +378,27 @@ export default async function ClimatePage() {
                   <Droplets className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Most Humid</p>
-                  <p className="text-lg font-black text-slate-200 truncate capitalize">{mostHumid.city}</p>
-                  <p className="text-blue-400 font-mono font-bold text-xl">{mostHumid.val}%</p>
+                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                    Most Humid
+                  </p>
+                  <p className="text-lg font-black text-slate-200 truncate capitalize">
+                    {mostHumid.city}
+                  </p>
+                  <p className="text-blue-400 font-mono font-bold text-xl">
+                    {mostHumid.val}%
+                  </p>
                 </div>
               </div>
             </div>
           </section>
-
         </div>
 
         {/* Data List for Reference */}
         <section className="rounded-3xl border border-slate-800 bg-slate-900/30 backdrop-blur-xl overflow-hidden mt-8">
           <div className="p-6 border-b border-slate-800/60 flex justify-between items-center">
-            <h2 className="text-xl font-bold text-white">Recent Records Explorer</h2>
+            <h2 className="text-xl font-bold text-white">
+              Recent Records Explorer
+            </h2>
           </div>
           <div className="divide-y divide-slate-800/30 max-h-[400px] overflow-y-auto">
             {climateData && climateData.length > 0 ? (
@@ -344,24 +413,33 @@ export default async function ClimatePage() {
                     </div>
                     <div>
                       <h3 className="text-slate-200 font-bold capitalize tracking-wide">
-                        {record.location_id === "global" ? "Global Aggregate" : record.location_id.replace(/_/g, " ")}
+                        {record.location_id === "global"
+                          ? "Global Aggregate"
+                          : record.location_id.replace(/_/g, " ")}
                       </h3>
                       <p className="text-xs text-slate-500 font-medium">
                         {new Date(record.timestamp).toLocaleString("en-US", {
-                          month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
                         })}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-6 text-sm">
                     <div className="text-right">
-                      <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Temp</p>
+                      <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                        Temp
+                      </p>
                       <p className="font-mono font-bold text-slate-200">
                         {record.temperature}°C
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Humidity</p>
+                      <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                        Humidity
+                      </p>
                       <p className="font-mono font-bold text-slate-200">
                         {record.humidity}%
                       </p>
@@ -371,12 +449,12 @@ export default async function ClimatePage() {
               ))
             ) : (
               <div className="p-12 text-center text-slate-500">
-                No climate data available yet. Make sure to run the collection agent.
+                No climate data available yet. Make sure to run the collection
+                agent.
               </div>
             )}
           </div>
         </section>
-
       </div>
     </div>
   );
