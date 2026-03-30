@@ -41,6 +41,14 @@ export interface MapPoint {
   link: string;
 }
 
+export interface GlobalRiskIndex {
+  score: number;
+  climate: "low" | "medium" | "high";
+  market: "low" | "medium" | "high";
+  disaster: "low" | "medium" | "high";
+  news: "low" | "medium" | "high";
+}
+
 export interface DashboardStats {
   newsCount: number;
   disasterCount: number;
@@ -53,6 +61,7 @@ export interface DashboardStats {
   marketTrend: number;
   astroEventsToday: string[];
   mapPoints: MapPoint[];
+  riskIndex: GlobalRiskIndex;
 }
 
 export async function getTimelineData(): Promise<TimelineEntry[]> {
@@ -259,7 +268,13 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       newsSentiment: sentiment,
       marketTrend,
       astroEventsToday,
-      mapPoints
+      mapPoints,
+      riskIndex: calculateRiskIndex(
+        parseInt(disasterCountRes.rows[0]?.count || '0'),
+        temperatureAnomaly,
+        marketTrend,
+        sentiment
+      )
     };
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);
@@ -274,7 +289,57 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       newsSentiment: { positive: 50, negative: 50 },
       marketTrend: 0,
       astroEventsToday: [],
-      mapPoints: []
+      mapPoints: [],
+      riskIndex: {
+        score: 50,
+        climate: "medium",
+        market: "medium",
+        disaster: "medium",
+        news: "medium"
+      }
     };
   }
+}
+
+function calculateRiskIndex(
+  disasterCount: number,
+  tempAnomaly: number,
+  marketTrend: number,
+  sentiment: { positive: number; negative: number }
+): GlobalRiskIndex {
+  // 1. Disaster Risk (30%)
+  // 0 disasters = 30 pts, 10+ = 0 pts
+  const disasterScore = Math.max(0, 30 - (disasterCount * 3));
+  const disasterLevel: "low" | "medium" | "high" = 
+    disasterCount === 0 ? "low" : disasterCount < 5 ? "medium" : "high";
+
+  // 2. Climate Risk (20%)
+  // Anomaly near 0 = 20 pts, > 2.0 = 0 pts
+  const absAnomaly = Math.abs(tempAnomaly);
+  const climateScore = Math.max(0, 20 - (absAnomaly * 10));
+  const climateLevel: "low" | "medium" | "high" = 
+    absAnomaly < 0.5 ? "low" : absAnomaly < 1.5 ? "medium" : "high";
+
+  // 3. Market Risk (25%)
+  // Abs Trend near 0 = 25 pts, > 5.0 = 0 pts
+  const absMarket = Math.abs(marketTrend);
+  const marketScore = Math.max(0, 25 - (absMarket * 5));
+  const marketLevel: "low" | "medium" | "high" = 
+    absMarket < 1 ? "low" : absMarket < 3 ? "medium" : "high";
+
+  // 4. News Risk (25%)
+  // Sentiment positive ratio
+  const newsScore = (sentiment.positive / 100) * 25;
+  const newsLevel: "low" | "medium" | "high" = 
+    sentiment.positive > 70 ? "low" : sentiment.positive > 40 ? "medium" : "high";
+
+  const totalScore = Math.round(disasterScore + climateScore + marketScore + newsScore);
+
+  return {
+    score: totalScore,
+    climate: climateLevel,
+    market: marketLevel,
+    disaster: disasterLevel,
+    news: newsLevel
+  };
 }

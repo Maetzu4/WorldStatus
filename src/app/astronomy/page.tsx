@@ -1,4 +1,4 @@
-import { Moon, Star, Telescope, Calendar } from "lucide-react";
+import { Moon, Star, Telescope, Calendar, Info } from "lucide-react";
 import { query } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +40,68 @@ const eventBadge: Record<string, string> = {
   SEP: "bg-pink-500/10 text-pink-400 border-pink-500/20",
   DONKI_NOTIFICATION: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20",
 };
+
+const severityLevel: Record<string, "low" | "medium" | "high"> = {
+  CME: "high",
+  FLR: "high",
+  GST: "medium",
+  SEP: "medium",
+  IPS: "low",
+  DONKI_NOTIFICATION: "low",
+  APOD: "low"
+};
+
 const defaultBadge = "bg-slate-500/10 text-slate-400 border-slate-500/20";
+
+// --- Astronomy Helpers ---
+
+function getMoonPhase(date: Date) {
+  const lp = 2551443; 
+  const now = new Date(date);
+  const newMoon = new Date("1970-01-07T20:35:00Z");
+  const phase = ((now.getTime() - newMoon.getTime()) / 1000) % lp;
+  const res = Math.floor((phase / lp) * 30);
+  
+  const phases = [
+    { name: "New Moon", emoji: "🌑" },
+    { name: "Waxing Crescent", emoji: "🌒" },
+    { name: "First Quarter", emoji: "🌓" },
+    { name: "Waxing Gibbous", emoji: "🌔" },
+    { name: "Full Moon", emoji: "🌕" },
+    { name: "Waning Gibbous", emoji: "🌖" },
+    { name: "Last Quarter", emoji: "🌗" },
+    { name: "Waning Crescent", emoji: "🌘" }
+  ];
+  
+  const index = Math.floor((res / 30) * 8) % 8;
+  return phases[index];
+}
+
+const UPCOMING_ECLIPSES = [
+  { date: "2026-08-12", type: "Total Solar Eclipse", region: "Arctic, Greenland, Iceland, Spain" },
+  { date: "2027-02-06", type: "Annular Solar Eclipse", region: "South America, Antarctica" },
+  { date: "2027-08-02", type: "Total Solar Eclipse", region: "North Africa, Middle East" },
+  { date: "2028-01-26", type: "Annular Solar Eclipse", region: "South America, Spain" },
+];
+
+function SeverityBadge({ level }: { level: "low" | "medium" | "high" }) {
+  const colors = {
+    low: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+    medium: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+    high: "bg-rose-500/20 text-rose-400 border-rose-500/30"
+  };
+  const glowColor = level === "high" ? "244, 63, 94" : level === "medium" ? "245, 158, 11" : "16, 185, 129";
+  
+  return (
+    <span 
+      className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border flex items-center gap-1 ${colors[level]} animate-pulse-glow`} 
+      style={{ "--glow-color": glowColor } as React.CSSProperties}
+    >
+      <span className="w-1 h-1 rounded-full bg-current" />
+      {level}
+    </span>
+  );
+}
 
 function isEmbedVideo(url: string): boolean {
   return (
@@ -116,9 +177,12 @@ export default async function AstronomyPage() {
               </div>
             </div>
             <p className="text-sm font-medium text-slate-400 mb-1">
-              DONKI Alerts
+              Moon Phase
             </p>
-            <p className="text-3xl font-bold text-slate-50">{donkiCount}</p>
+            <p className="text-2xl font-bold text-slate-50 flex items-center gap-2">
+              <span className="text-white">{getMoonPhase(new Date()).emoji}</span>
+              {getMoonPhase(new Date()).name}
+            </p>
           </div>
         </div>
 
@@ -182,6 +246,60 @@ export default async function AstronomyPage() {
           </section>
         )}
 
+        {/* Insights & Eclipses Grid */}
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Next Eclipses */}
+          <div className="rounded-3xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl p-6">
+            <div className="flex items-center space-x-2 mb-6 text-purple-400">
+              <Calendar className="w-5 h-5" />
+              <h2 className="text-xl font-semibold">Upcoming Eclipses</h2>
+            </div>
+            <div className="space-y-4">
+              {UPCOMING_ECLIPSES.map((eclipse, idx) => (
+                <div key={idx} className="flex justify-between items-center p-3 rounded-xl bg-slate-800/40 border border-slate-700/50">
+                  <div>
+                    <p className="text-white font-bold text-sm sm:text-base">{eclipse.type}</p>
+                    <p className="text-[10px] sm:text-xs text-slate-500 uppercase tracking-tight">{eclipse.region}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-purple-400 font-mono text-xs sm:text-sm font-bold">{eclipse.date}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Quick Facts */}
+          <div className="rounded-3xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl p-6">
+            <div className="flex items-center space-x-2 mb-6 text-indigo-400">
+              <Info className="w-5 h-5" />
+              <h2 className="text-xl font-semibold">Cosmic Analytics</h2>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/50 shadow-inner">
+                <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">Solar Storms</p>
+                <p className="text-2xl font-black text-white">{donkiCount}</p>
+              </div>
+              <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/50 shadow-inner">
+                <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">Total Signals</p>
+                <p className="text-2xl font-black text-white">{totalEvents}</p>
+              </div>
+              <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/50 shadow-inner col-span-2">
+                <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">Current Lunar Cycle</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-lg font-bold text-slate-200">
+                    {getMoonPhase(new Date()).name}
+                  </p>
+                  <span className="text-3xl">{getMoonPhase(new Date()).emoji}</span>
+                </div>
+                <div className="w-full bg-slate-700 h-1 rounded-full mt-3 overflow-hidden">
+                   <div className="bg-indigo-500 h-full w-[65%]" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* Events List */}
         <section className="rounded-3xl border border-slate-800 bg-slate-900/50 backdrop-blur-xl overflow-hidden">
           <div className="p-6 border-b border-slate-800 flex justify-between items-center">
@@ -217,6 +335,7 @@ export default async function AstronomyPage() {
                           >
                             {event.event}
                           </span>
+                          <SeverityBadge level={severityLevel[event.event] || "low"} />
                           <span className="text-xs text-slate-600 flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
                             {new Date(event.date).toLocaleString()}

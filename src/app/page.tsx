@@ -49,31 +49,74 @@ export default async function Home() {
               .
             </p>
           </div>
-          {stats.hotZones.length > 0 && (
-            <div className="bg-slate-900/40 border border-slate-800 p-3 rounded-xl backdrop-blur-sm">
-              <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
-                Hot Zones
-              </span>
-              <div className="flex gap-2">
-                {stats.hotZones.map((zone) => (
-                  <span
-                    key={zone.country}
-                    className="text-xs font-semibold px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded-md border border-blue-500/20"
-                  >
-                    {zone.country} ({zone.count})
-                  </span>
-                ))}
+          <div className="flex flex-col gap-4">
+            {stats.hotZones.length > 0 && (
+              <div className="bg-slate-900/40 border border-slate-800 p-3 rounded-xl backdrop-blur-sm">
+                <span className="text-[10px] uppercase font-bold text-slate-500 block mb-1">
+                  Hot Zones
+                </span>
+                <div className="flex gap-2">
+                  {stats.hotZones.map((zone) => (
+                    <span
+                      key={zone.country}
+                      className="text-xs font-semibold px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded-md border border-blue-500/20"
+                    >
+                      {zone.country} ({zone.count})
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </header>
+
+      {/* Global Stability Index Section */}
+      <section className="animate-fade-slide-in">
+        <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden backdrop-blur-xl">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full -translate-y-48 translate-x-48 blur-3xl" />
+          <div className="relative z-10 flex flex-col lg:flex-row items-center gap-12">
+            <div className="">
+              <RiskIndexGauge score={stats.riskIndex.score} />
+            </div>
+            <div className="flex-1 space-y-6">
+              <div>
+                <h2 className="text-3xl font-black text-white mb-2">
+                  Global Stability Index
+                </h2>
+                <p className="text-slate-400 max-w-xl">
+                  A high-level analytical metric aggregating real-time signals
+                  from disasters, climate anomalies, market volatility, and
+                  global sentiment.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <SeverityBadge
+                  label="Disasters"
+                  level={stats.riskIndex.disaster}
+                />
+                <SeverityBadge
+                  label="Climate"
+                  level={stats.riskIndex.climate}
+                />
+                <SeverityBadge label="Markets" level={stats.riskIndex.market} />
+                <SeverityBadge label="News" level={stats.riskIndex.news} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Global Highlights Section */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatsCard
           label="Global Temp"
-          value={stats.temperatureAnomaly >= 0 ? `+${stats.temperatureAnomaly.toFixed(1)}°C` : `${stats.temperatureAnomaly.toFixed(1)}°C`}
+          value={
+            stats.temperatureAnomaly >= 0
+              ? `+${stats.temperatureAnomaly.toFixed(1)}°C`
+              : `${stats.temperatureAnomaly.toFixed(1)}°C`
+          }
           icon={<Thermometer className="w-5 h-5 text-orange-400" />}
           trend="Anomaly"
           color="orange"
@@ -81,7 +124,11 @@ export default async function Home() {
         <StatsCard
           label="Active Alerts"
           value={stats.disasterCount}
-          icon={<ShieldAlert className={`w-5 h-5 ${stats.disasterCount > 0 ? 'text-red-400 animate-pulse' : 'text-slate-400'}`} />}
+          icon={
+            <ShieldAlert
+              className={`w-5 h-5 ${stats.disasterCount > 0 ? "text-red-400 animate-pulse" : "text-slate-400"}`}
+            />
+          }
           trend="Disasters 24h"
           color={stats.disasterCount > 0 ? "red" : "slate"}
         />
@@ -89,9 +136,13 @@ export default async function Home() {
           label="News Sentiment"
           value={
             <div className="flex gap-1 items-center tracking-tight">
-              <span className="text-emerald-400">{stats.newsSentiment.positive}%</span>
+              <span className="text-emerald-400">
+                {stats.newsSentiment.positive}%
+              </span>
               <span className="text-slate-500 text-sm font-light">/</span>
-              <span className="text-red-400">{stats.newsSentiment.negative}%</span>
+              <span className="text-red-400">
+                {stats.newsSentiment.negative}%
+              </span>
             </div>
           }
           icon={<Newspaper className="w-5 h-5 text-emerald-400" />}
@@ -100,9 +151,13 @@ export default async function Home() {
         />
         <StatsCard
           label="Market Avg"
-          value={`${stats.marketTrend > 0 ? '+' : ''}${stats.marketTrend.toFixed(2)}%`}
+          value={`${stats.marketTrend > 0 ? "+" : ""}${stats.marketTrend.toFixed(2)}%`}
           subValue={stats.topMover?.name ? `${stats.topMover.name}` : ""}
-          icon={<TrendingUp className={`w-5 h-5 ${stats.marketTrend >= 0 ? 'text-emerald-400' : 'text-red-400'}`} />}
+          icon={
+            <TrendingUp
+              className={`w-5 h-5 ${stats.marketTrend >= 0 ? "text-emerald-400" : "text-red-400"}`}
+            />
+          }
           trend="Global Indices"
           color={stats.marketTrend >= 0 ? "emerald" : "red"}
         />
@@ -125,7 +180,9 @@ export default async function Home() {
               <Globe className="w-6 h-6 text-indigo-400" />
               Global Activity Map
             </h2>
-            <p className="text-sm text-slate-400 mt-1">Live geographic tracker</p>
+            <p className="text-sm text-slate-400 mt-1">
+              Live geographic tracker
+            </p>
           </div>
         </div>
         <GlobalMap points={stats.mapPoints} />
@@ -209,21 +266,29 @@ function StatsCard({
   color?: string;
 }) {
   const shadowColors: Record<string, string> = {
-    orange: "hover:shadow-orange-500/10 group-hover:bg-orange-500/5 border-slate-800 hover:border-orange-500/50",
+    orange:
+      "hover:shadow-orange-500/10 group-hover:bg-orange-500/5 border-slate-800 hover:border-orange-500/50",
     red: "hover:shadow-red-500/10 group-hover:bg-red-500/5 border-slate-800 hover:border-red-500/50",
-    emerald: "hover:shadow-emerald-500/10 group-hover:bg-emerald-500/5 border-slate-800 hover:border-emerald-500/50",
+    emerald:
+      "hover:shadow-emerald-500/10 group-hover:bg-emerald-500/5 border-slate-800 hover:border-emerald-500/50",
     blue: "hover:shadow-blue-500/10 group-hover:bg-blue-500/5 border-slate-800 hover:border-blue-500/50",
-    purple: "hover:shadow-purple-500/10 group-hover:bg-purple-500/5 border-slate-800 hover:border-purple-500/50",
-    slate: "hover:shadow-slate-500/10 group-hover:bg-white/5 border-slate-800 hover:border-slate-500/50",
+    purple:
+      "hover:shadow-purple-500/10 group-hover:bg-purple-500/5 border-slate-800 hover:border-purple-500/50",
+    slate:
+      "hover:shadow-slate-500/10 group-hover:bg-white/5 border-slate-800 hover:border-slate-500/50",
   };
 
   const bgGradient = shadowColors[color] || shadowColors.blue;
 
   return (
-    <div className={`bg-slate-900/40 border p-5 rounded-2xl flex flex-col justify-between transition-all group relative overflow-hidden shadow-lg hover:-translate-y-1 ${bgGradient}`}>
+    <div
+      className={`bg-slate-900/40 border p-5 rounded-2xl flex flex-col justify-between transition-all group relative overflow-hidden shadow-lg hover:-translate-y-1 ${bgGradient}`}
+    >
       <div className="absolute top-0 right-0 w-24 h-24 from-white/5 to-transparent rounded-full -translate-y-12 translate-x-12 group-hover:scale-150 transition-transform duration-500" />
       <div className="flex justify-between items-start mb-4 relative z-10">
-        <div className={`p-2.5 bg-slate-800/80 rounded-xl border border-slate-700/50 shadow-inner group-hover:scale-110 transition-transform`}>
+        <div
+          className={`p-2.5 bg-slate-800/80 rounded-xl border border-slate-700/50 shadow-inner group-hover:scale-110 transition-transform`}
+        >
           {icon}
         </div>
         <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500">
@@ -288,3 +353,91 @@ function DashboardCard({
   );
 }
 
+function SeverityBadge({
+  label,
+  level,
+}: {
+  label: string;
+  level: "low" | "medium" | "high";
+}) {
+  const configs = {
+    low: {
+      color: "text-emerald-400",
+      bg: "bg-emerald-500/10",
+      border: "border-emerald-500/20",
+      dot: "bg-emerald-400",
+    },
+    medium: {
+      color: "text-amber-400",
+      bg: "bg-amber-500/10",
+      border: "border-amber-500/20",
+      dot: "bg-amber-400",
+    },
+    high: {
+      color: "text-rose-400",
+      bg: "bg-rose-500/10",
+      border: "border-rose-500/20",
+      dot: "bg-rose-400",
+    },
+  };
+  const config = configs[level];
+
+  return (
+    <div
+      className={`flex flex-col gap-1 p-3 rounded-2xl border ${config.bg} ${config.border} backdrop-blur-sm`}
+    >
+      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+        {label}
+      </span>
+      <div className="flex items-center gap-2">
+        <span className={`w-2 h-2 rounded-full ${config.dot} animate-pulse`} />
+        <span className={`text-sm font-black uppercase ${config.color}`}>
+          {level}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function RiskIndexGauge({ score }: { score: number }) {
+  const color = score > 70 ? "#10b981" : score > 40 ? "#f59e0b" : "#f43f5e";
+  const radius = 70;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (score / 100) * circumference;
+
+  return (
+    <div className="relative flex items-center justify-center">
+      <svg className="w-48 h-48 -rotate-90">
+        <circle
+          cx="96"
+          cy="96"
+          r={radius}
+          stroke="currentColor"
+          strokeWidth="12"
+          fill="transparent"
+          className="text-slate-800"
+        />
+        <circle
+          cx="96"
+          cy="96"
+          r={radius}
+          stroke={color}
+          strokeWidth="12"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          fill="transparent"
+          className="transition-all duration-1000 ease-out animate-ring-fill"
+        />
+      </svg>
+      <div className="absolute flex flex-col items-center justify-center text-center">
+        <span className="text-5xl font-black text-white tracking-tighter">
+          {score}
+        </span>
+        <span className="text-[10px] uppercase font-black text-slate-500 tracking-widest mt-1">
+          / 100
+        </span>
+      </div>
+    </div>
+  );
+}
