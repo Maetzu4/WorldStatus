@@ -3,7 +3,7 @@ import { getCache, setCache } from "./redis";
 
 export interface TimelineEntry {
   id: number;
-  category: "clima" | "desastre" | "noticia" | "finanzas" | "astronomía";
+  category: "weather" | "disaster" | "news" | "markets" | "astronomy";
   title: string;
   timestamp: Date;
   extra?: unknown;
@@ -51,7 +51,12 @@ export interface GlobalRiskIndex {
   market: "low" | "medium" | "high";
   disaster: "low" | "medium" | "high";
   news: "low" | "medium" | "high";
-  weights: { disasters: number; climate: number; markets: number; news: number };
+  weights: {
+    disasters: number;
+    climate: number;
+    markets: number;
+    news: number;
+  };
   trend: number; // delta vs previous period
   riskLevel: "Low" | "Moderate" | "High" | "Critical";
 }
@@ -98,17 +103,16 @@ export interface DashboardStats {
 }
 
 export async function getTimelineData(
-  range: "24h" | "7d" | "30d" = "24h"
+  range: "24h" | "7d" | "30d" = "24h",
 ): Promise<TimelineEntry[]> {
   const limit = range === "24h" ? 50 : range === "7d" ? 100 : 200;
 
-
   const categoryMap: Record<string, TimelineEntry["category"]> = {
-    general: "noticia",
-    clima: "clima",
-    desastre: "desastre",
-    finanzas: "finanzas",
-    astronomia: "astronomía",
+    general: "news",
+    clima: "weather",
+    desastre: "disaster",
+    finanzas: "markets",
+    astronomia: "astronomy",
   };
 
   const timeline: TimelineEntry[] = [];
@@ -119,7 +123,7 @@ export async function getTimelineData(
       `SELECT id, category, title, published_at, created_at
        FROM news_articles
        ORDER BY published_at DESC NULLS LAST LIMIT $1`,
-      [limit]
+      [limit],
     );
 
     (newsRes.rows as unknown as NewsRow[]).forEach((row) => {
@@ -140,14 +144,14 @@ export async function getTimelineData(
     const financeRes = await query(
       `SELECT id, index_name, value, change, timestamp
        FROM finance_indices
-       ORDER BY timestamp DESC NULLS LAST LIMIT 10`
+       ORDER BY timestamp DESC NULLS LAST LIMIT 10`,
     );
 
     (financeRes.rows as unknown as FinanceRow[]).forEach((row) => {
       const changeVal = parseFloat(row.change);
       timeline.push({
         id: row.id,
-        category: "finanzas",
+        category: "markets",
         title: `${row.index_name} ${changeVal >= 0 ? "gained" : "lost"} ${Math.abs(changeVal).toFixed(2)}%`,
         timestamp: new Date(row.timestamp),
       });
@@ -161,7 +165,7 @@ export async function getTimelineData(
     const astroRes = await query(
       `SELECT id, event, date, extra_info
        FROM astronomy_events
-       ORDER BY date DESC NULLS LAST LIMIT 10`
+       ORDER BY date DESC NULLS LAST LIMIT 10`,
     );
 
     (astroRes.rows as unknown as AstroRow[]).forEach((row) => {
@@ -170,7 +174,7 @@ export async function getTimelineData(
       if (eventDate.getFullYear() < 2000) return;
       timeline.push({
         id: row.id,
-        category: "astronomía",
+        category: "astronomy",
         title: `${row.event} detected`,
         timestamp: eventDate,
       });
@@ -185,15 +189,22 @@ export async function getTimelineData(
       `SELECT location_id, temperature, weather_type, timestamp
        FROM weather_snapshots
        WHERE location_id != 'global'
-       ORDER BY timestamp DESC NULLS LAST LIMIT 10`
+       ORDER BY timestamp DESC NULLS LAST LIMIT 10`,
     );
 
-    (weatherRes.rows as unknown as { location_id: string; temperature: string; weather_type: string; timestamp: string }[]).forEach((row, i) => {
+    (
+      weatherRes.rows as unknown as {
+        location_id: string;
+        temperature: string;
+        weather_type: string;
+        timestamp: string;
+      }[]
+    ).forEach((row, i) => {
       const temp = parseFloat(row.temperature);
       if (isNaN(temp)) return;
       timeline.push({
         id: 100000 + i,
-        category: "clima",
+        category: "weather",
         title: `${row.location_id.replace(/_/g, " ")} — ${temp}°C, ${row.weather_type || "update"}`,
         timestamp: new Date(row.timestamp),
       });
@@ -246,61 +257,53 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     astroLatestRes,
   ] = await Promise.all([
     safeQuery("SELECT COUNT(*) FROM news_articles"),
+    safeQuery("SELECT COUNT(*) FROM news_articles WHERE category = 'desastre'"),
     safeQuery(
-      "SELECT COUNT(*) FROM news_articles WHERE category = 'desastre'"
-    ),
-    safeQuery(
-      "SELECT index_name, change FROM finance_indices ORDER BY ABS(change) DESC LIMIT 1"
+      "SELECT index_name, change FROM finance_indices ORDER BY ABS(change) DESC LIMIT 1",
     ),
     safeQuery("SELECT COUNT(*) FROM astronomy_events"),
-    safeQuery(
-      "SELECT COUNT(*) FROM news_articles WHERE category = 'clima'"
-    ),
+    safeQuery("SELECT COUNT(*) FROM news_articles WHERE category = 'clima'"),
     safeQuery("SELECT AVG(change) FROM finance_indices"),
-    safeQuery(
-      "SELECT event FROM astronomy_events ORDER BY date DESC LIMIT 5"
-    ),
-    safeQuery(
-      "SELECT AVG(temperature) FROM weather_snapshots"
-    ),
+    safeQuery("SELECT event FROM astronomy_events ORDER BY date DESC LIMIT 5"),
+    safeQuery("SELECT AVG(temperature) FROM weather_snapshots"),
     safeQuery(
       `SELECT country, COUNT(*) as count
        FROM news_articles
        WHERE country IS NOT NULL
        GROUP BY country
-       ORDER BY count DESC LIMIT 3`
+       ORDER BY count DESC LIMIT 3`,
     ),
     safeQuery(
       `SELECT id, category, title, description, url, lat, lon, country
        FROM news_articles
        WHERE lat IS NOT NULL OR country IS NOT NULL
        ORDER BY published_at DESC NULLS LAST
-       LIMIT 50`
+       LIMIT 50`,
     ),
     safeQuery(
       `SELECT location_id, temperature, humidity, wind_speed, weather_type
        FROM weather_snapshots
        WHERE location_id != 'global'
        ORDER BY timestamp DESC
-       LIMIT 30`
+       LIMIT 30`,
     ),
     safeQuery(
-      "SELECT COUNT(DISTINCT location_id) FROM weather_snapshots WHERE location_id != 'global'"
+      "SELECT COUNT(DISTINCT location_id) FROM weather_snapshots WHERE location_id != 'global'",
     ),
     safeQuery("SELECT COUNT(*) FROM news_articles"),
     safeQuery("SELECT MAX(timestamp) as latest FROM weather_snapshots"),
     safeQuery(
-      "SELECT MAX(published_at) as latest FROM news_articles WHERE category = 'desastre'"
+      "SELECT MAX(published_at) as latest FROM news_articles WHERE category = 'desastre'",
     ),
     safeQuery("SELECT MAX(published_at) as latest FROM news_articles"),
     safeQuery("SELECT MAX(timestamp) as latest FROM finance_indices"),
     safeQuery("SELECT MAX(date) as latest FROM astronomy_events"),
   ]);
 
-  const totalNews = parseInt(newsCountRes.rows[0]?.count as string || "0");
+  const totalNews = parseInt((newsCountRes.rows[0]?.count as string) || "0");
   const negativeNews =
-    parseInt(disasterCountRes.rows[0]?.count as string || "0") +
-    parseInt(climateAlertsRes.rows[0]?.count as string || "0");
+    parseInt((disasterCountRes.rows[0]?.count as string) || "0") +
+    parseInt((climateAlertsRes.rows[0]?.count as string) || "0");
   const positiveNews = totalNews > 0 ? totalNews - negativeNews : 0;
   const sentiment =
     totalNews > 0
@@ -323,12 +326,16 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     : 14;
   const temperatureAnomaly = currentTempAvg - 14;
 
-  const disasterCount = parseInt(disasterCountRes.rows[0]?.count as string || "0");
-  const astroCount = parseInt(astroCountRes.rows[0]?.count as string || "0");
-  const trackedLocations = parseInt(
-    trackedLocationsRes.rows[0]?.count as string || "0"
+  const disasterCount = parseInt(
+    (disasterCountRes.rows[0]?.count as string) || "0",
   );
-  const totalArticles = parseInt(totalArticlesRes.rows[0]?.count as string || "0");
+  const astroCount = parseInt((astroCountRes.rows[0]?.count as string) || "0");
+  const trackedLocations = parseInt(
+    (trackedLocationsRes.rows[0]?.count as string) || "0",
+  );
+  const totalArticles = parseInt(
+    (totalArticlesRes.rows[0]?.count as string) || "0",
+  );
 
   // ── Map Points ──────────────────────────────────────────────
   const mapPoints: MapPoint[] = [];
@@ -398,7 +405,11 @@ export async function getDashboardStats(): Promise<DashboardStats> {
           : "news";
 
     const severity: MapPoint["severity"] =
-      row.category === "desastre" ? "high" : row.category === "clima" ? "medium" : "low";
+      row.category === "desastre"
+        ? "high"
+        : row.category === "clima"
+          ? "medium"
+          : "low";
 
     if (lat !== null && lon !== null && !isNaN(lat) && !isNaN(lon)) {
       mapPoints.push({
@@ -419,56 +430,56 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   });
 
   const cityCoords: Record<string, [number, number]> = {
-    "New_York": [40.7128, -74.0060],
-    "London": [51.5074, -0.1278],
-    "Tokyo": [35.6762, 139.6503],
-    "Paris": [48.8566, 2.3522],
-    "Sydney": [-33.8688, 151.2093],
-    "Dubai": [25.2048, 55.2708],
-    "Singapore": [1.3521, 103.8198],
-    "Hong_Kong": [22.3193, 114.1694],
-    "Berlin": [52.5200, 13.4050],
-    "Madrid": [40.4168, -3.7038],
-    "Rome": [41.9028, 12.4964],
-    "Moscow": [55.7558, 37.6173],
-    "Beijing": [39.9042, 116.4074],
-    "Shanghai": [31.2304, 121.4737],
-    "Cairo": [30.0444, 31.2357],
-    "Johannesburg": [-26.2041, 28.0473],
-    "Cape_Town": [-33.9249, 18.4241],
-    "Lagos": [6.5244, 3.3792],
-    "Nairobi": [-1.2921, 36.8219],
-    "Rio_de_Janeiro": [-22.9068, -43.1729],
-    "Sao_Paulo": [-23.5505, -46.6333],
-    "Buenos_Aires": [-34.6037, -58.3816],
-    "Santiago": [-33.4489, -70.6693],
-    "Lima": [-12.0464, -77.0428],
-    "Bogota": [4.7110, -74.0721],
-    "Mexico_City": [19.4326, -99.1332],
-    "Toronto": [43.6510, -79.3470],
-    "Vancouver": [49.2827, -123.1207],
-    "Los_Angeles": [34.0522, -118.2437],
-    "Chicago": [41.8781, -87.6298],
-    "Miami": [25.7617, -80.1918],
-    "Seoul": [37.5665, 126.9780],
-    "Mumbai": [19.0760, 72.8777],
-    "Delhi": [28.7041, 77.1025],
-    "Bangkok": [13.7563, 100.5018],
-    "Jakarta": [-6.2088, 106.8456],
-    "Manila": [14.5995, 120.9842],
-    "Kuala_Lumpur": [3.1390, 101.6869],
-    "Istanbul": [41.0082, 28.9784],
-    "Tehran": [35.6892, 51.3890],
-    "Riyadh": [24.7136, 46.6753],
-    "Stockholm": [59.3293, 18.0686],
-    "Oslo": [59.9139, 10.7522],
-    "Copenhagen": [55.6761, 12.5683],
-    "Amsterdam": [52.3676, 4.9041],
-    "Brussels": [50.8503, 4.3517],
-    "Vienna": [48.2082, 16.3738],
-    "Zurich": [47.3769, 8.5417],
-    "Athens": [37.9838, 23.7275],
-    "Lisbon": [38.7223, -9.1393],
+    New_York: [40.7128, -74.006],
+    London: [51.5074, -0.1278],
+    Tokyo: [35.6762, 139.6503],
+    Paris: [48.8566, 2.3522],
+    Sydney: [-33.8688, 151.2093],
+    Dubai: [25.2048, 55.2708],
+    Singapore: [1.3521, 103.8198],
+    Hong_Kong: [22.3193, 114.1694],
+    Berlin: [52.52, 13.405],
+    Madrid: [40.4168, -3.7038],
+    Rome: [41.9028, 12.4964],
+    Moscow: [55.7558, 37.6173],
+    Beijing: [39.9042, 116.4074],
+    Shanghai: [31.2304, 121.4737],
+    Cairo: [30.0444, 31.2357],
+    Johannesburg: [-26.2041, 28.0473],
+    Cape_Town: [-33.9249, 18.4241],
+    Lagos: [6.5244, 3.3792],
+    Nairobi: [-1.2921, 36.8219],
+    Rio_de_Janeiro: [-22.9068, -43.1729],
+    Sao_Paulo: [-23.5505, -46.6333],
+    Buenos_Aires: [-34.6037, -58.3816],
+    Santiago: [-33.4489, -70.6693],
+    Lima: [-12.0464, -77.0428],
+    Bogota: [4.711, -74.0721],
+    Mexico_City: [19.4326, -99.1332],
+    Toronto: [43.651, -79.347],
+    Vancouver: [49.2827, -123.1207],
+    Los_Angeles: [34.0522, -118.2437],
+    Chicago: [41.8781, -87.6298],
+    Miami: [25.7617, -80.1918],
+    Seoul: [37.5665, 126.978],
+    Mumbai: [19.076, 72.8777],
+    Delhi: [28.7041, 77.1025],
+    Bangkok: [13.7563, 100.5018],
+    Jakarta: [-6.2088, 106.8456],
+    Manila: [14.5995, 120.9842],
+    Kuala_Lumpur: [3.139, 101.6869],
+    Istanbul: [41.0082, 28.9784],
+    Tehran: [35.6892, 51.389],
+    Riyadh: [24.7136, 46.6753],
+    Stockholm: [59.3293, 18.0686],
+    Oslo: [59.9139, 10.7522],
+    Copenhagen: [55.6761, 12.5683],
+    Amsterdam: [52.3676, 4.9041],
+    Brussels: [50.8503, 4.3517],
+    Vienna: [48.2082, 16.3738],
+    Zurich: [47.3769, 8.5417],
+    Athens: [37.9838, 23.7275],
+    Lisbon: [38.7223, -9.1393],
   };
 
   (
@@ -574,7 +585,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
   // ── Data Freshness ──────────────────────────────────────────
   const computeFreshness = (
-    latestStr: string | null | undefined
+    latestStr: string | null | undefined,
   ): { status: string; delay: string } => {
     if (!latestStr) return { status: "Offline", delay: "No data" };
     const diff = Date.now() - new Date(latestStr).getTime();
@@ -589,11 +600,17 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   };
 
   const dataFreshness: DataFreshness = {
-    weather: computeFreshness(weatherLatestRes.rows[0]?.latest as string | null),
-    disasters: computeFreshness(disasterLatestRes.rows[0]?.latest as string | null),
+    weather: computeFreshness(
+      weatherLatestRes.rows[0]?.latest as string | null,
+    ),
+    disasters: computeFreshness(
+      disasterLatestRes.rows[0]?.latest as string | null,
+    ),
     news: computeFreshness(newsLatestRes.rows[0]?.latest as string | null),
     markets: computeFreshness(marketLatestRes.rows[0]?.latest as string | null),
-    astronomy: computeFreshness(astroLatestRes.rows[0]?.latest as string | null),
+    astronomy: computeFreshness(
+      astroLatestRes.rows[0]?.latest as string | null,
+    ),
   };
 
   // ── System Status ───────────────────────────────────────────
@@ -609,7 +626,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     disasterCount,
     temperatureAnomaly,
     marketTrend,
-    sentiment
+    sentiment,
   );
 
   const result: DashboardStats = {
@@ -617,12 +634,24 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     disasterCount,
     topMover: financeMover.rows[0]
       ? {
-          name: (financeMover.rows[0] as unknown as { index_name: string; change: string }).index_name,
-          change: parseFloat((financeMover.rows[0] as unknown as { index_name: string; change: string }).change),
+          name: (
+            financeMover.rows[0] as unknown as {
+              index_name: string;
+              change: string;
+            }
+          ).index_name,
+          change: parseFloat(
+            (
+              financeMover.rows[0] as unknown as {
+                index_name: string;
+                change: string;
+              }
+            ).change,
+          ),
         }
       : null,
     astroCount,
-    climateAlerts: parseInt(climateAlertsRes.rows[0]?.count as string || "0"),
+    climateAlerts: parseInt((climateAlertsRes.rows[0]?.count as string) || "0"),
     hotZones: (
       hotZonesRes.rows as unknown as { country: string; count: string }[]
     ).map((r) => ({ country: r.country, count: parseInt(r.count) })),
@@ -649,7 +678,7 @@ function calculateRiskIndex(
   disasterCount: number,
   tempAnomaly: number,
   marketTrend: number,
-  sentiment: { positive: number; negative: number }
+  sentiment: { positive: number; negative: number },
 ): GlobalRiskIndex {
   // 1. Disaster Risk (30%)
   const disasterScore = Math.max(0, 30 - disasterCount * 3);
@@ -678,7 +707,7 @@ function calculateRiskIndex(
         : "high";
 
   const totalScore = Math.round(
-    disasterScore + climateScore + marketScore + newsScore
+    disasterScore + climateScore + marketScore + newsScore,
   );
 
   const riskLevel: GlobalRiskIndex["riskLevel"] =
