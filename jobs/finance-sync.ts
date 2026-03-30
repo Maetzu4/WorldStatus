@@ -6,9 +6,12 @@ const MARKETSTACK_API_KEY = process.env.MARKETSTACK_API_KEY;
 
 // ETFs that track major indices (free tier doesn't support .INDX symbols)
 const INDICES = [
-  { symbol: "SPY", name: "S&P 500 (SPY)" },
-  { symbol: "DIA", name: "Dow Jones (DIA)" },
-  { symbol: "QQQ", name: "NASDAQ (QQQ)" },
+  { symbol: "SPY", name: "S&P 500" },
+  { symbol: "DIA", name: "Dow Jones" },
+  { symbol: "QQQ", name: "NASDAQ" },
+  { symbol: "EWJ", name: "Nikkei (EWJ)" },
+  { symbol: "EWU", name: "FTSE (EWU)" },
+  { symbol: "EWG", name: "DAX (EWG)" },
 ];
 
 async function syncFinance() {
