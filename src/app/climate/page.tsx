@@ -9,9 +9,16 @@ import {
   Zap,
   Bot,
   Navigation,
+  Gauge,
+  CloudRain,
+  Eye,
+  Thermometer,
+  ArrowUpDown,
+  CloudSun,
 } from "lucide-react";
 import { query } from "@/lib/db";
 import ClimateChart from "@/components/ClimateChart";
+import TemperatureDistribution from "@/components/TemperatureDistribution";
 
 export const dynamic = "force-dynamic";
 
@@ -40,40 +47,127 @@ async function getClimateData(): Promise<WeatherSnapshot[]> {
   }
 }
 
-// Generate human-readable automated insight
-function generateInsight(
+function generateInsights(
   chartPoints: { time: string; temperature: number }[],
   globalAvgTemp: number,
-): string {
-  if (chartPoints.length < 2)
-    return "Global temperatures remain stable within tracking limits.";
+  extremes: {
+    hottest: { city: string; val: number };
+    coldest: { city: string; val: number };
+    windiest: { city: string; val: number };
+    mostHumid: { city: string; val: number };
+  },
+  thermalRange: number,
+): { icon: string; text: string; severity: "info" | "warning" | "critical" }[] {
+  const insights: {
+    icon: string;
+    text: string;
+    severity: "info" | "warning" | "critical";
+  }[] = [];
 
-  const oldest = chartPoints[0].temperature;
-  const newest = chartPoints[chartPoints.length - 1].temperature;
-  const delta = newest - oldest;
+  if (chartPoints.length >= 2) {
+    const oldest = chartPoints[0].temperature;
+    const newest = chartPoints[chartPoints.length - 1].temperature;
+    const delta = newest - oldest;
+    const absDelta = Math.abs(delta).toFixed(1);
 
-  const absDelta = Math.abs(delta).toFixed(1);
-  const trend = delta > 0 ? "risen" : "fallen";
-
-  let insight = `Global temperatures have ${trend} by ${absDelta}°C over the tracking period.`;
-
-  if (globalAvgTemp > 25) {
-    insight += " A warming pattern is highly noticeable today.";
-  } else if (globalAvgTemp < 10) {
-    insight +=
-      " A widespread cooling phenomenon continues across monitored hemispheres.";
-  } else if (Math.abs(delta) < 0.3) {
-    insight =
-      "Global temperatures remain steadily constrained within historical averages.";
+    if (Math.abs(delta) > 2) {
+      insights.push({
+        icon: delta > 0 ? "🔥" : "❄️",
+        text: `Global temperatures have ${delta > 0 ? "risen" : "fallen"} by ${absDelta}°C over the tracking period`,
+        severity: Math.abs(delta) > 4 ? "critical" : "warning",
+      });
+    }
   }
 
-  return insight;
+  if (globalAvgTemp > 25) {
+    insights.push({
+      icon: "🌡",
+      text: "A warming pattern is highly noticeable today across monitored regions",
+      severity: "warning",
+    });
+  } else if (globalAvgTemp < 10) {
+    insights.push({
+      icon: "❄️",
+      text: "Widespread cooling continues across monitored hemispheres",
+      severity: "info",
+    });
+  }
+
+  if (extremes.hottest.val > 40) {
+    insights.push({
+      icon: "🔥",
+      text: `Extreme heat detected in ${extremes.hottest.city.replace(/_/g, " ")} at ${extremes.hottest.val}°C`,
+      severity: "critical",
+    });
+  }
+
+  if (extremes.windiest.val > 50) {
+    insights.push({
+      icon: "🌬",
+      text: `High wind speeds of ${extremes.windiest.val} km/h recorded in ${extremes.windiest.city.replace(/_/g, " ")}`,
+      severity: "warning",
+    });
+  }
+
+  if (thermalRange > 50) {
+    insights.push({
+      icon: "🌍",
+      text: `Global thermal range of ${thermalRange}°C indicates significant climate diversity`,
+      severity: "info",
+    });
+  }
+
+  if (insights.length === 0) {
+    insights.push({
+      icon: "✅",
+      text: "Global temperatures remain stable within normal tracking limits",
+      severity: "info",
+    });
+  }
+
+  return insights;
+}
+
+function computeAnomaly(currentAvg: number): { value: number; label: string } {
+  // Seasonal baseline approximation (~14°C global average)
+  const seasonalBaseline = 14;
+  const anomaly = currentAvg - seasonalBaseline;
+  return {
+    value: anomaly,
+    label:
+      anomaly >= 0 ? `+${anomaly.toFixed(1)}°C` : `${anomaly.toFixed(1)}°C`,
+  };
+}
+
+function computeForecast(
+  chartPoints: { temperature: number }[],
+  avgTemp: number,
+  windAvg: number,
+): { tempTrend: string; stormProb: string; windIntensity: string } {
+  if (chartPoints.length < 2)
+    return { tempTrend: "Stable", stormProb: "Low", windIntensity: "Stable" };
+
+  const recent = chartPoints.slice(-5);
+  const older = chartPoints.slice(0, 5);
+  const recentAvg =
+    recent.reduce((s, p) => s + p.temperature, 0) / recent.length;
+  const olderAvg = older.reduce((s, p) => s + p.temperature, 0) / older.length;
+  const delta = recentAvg - olderAvg;
+
+  const tempTrend =
+    delta > 0.5 ? "Rising" : delta < -0.5 ? "Falling" : "Stable";
+  const stormProb =
+    avgTemp > 28 && windAvg > 20 ? "High" : windAvg > 15 ? "Medium" : "Low";
+  const windIntensity =
+    windAvg > 25 ? "Increasing" : windAvg < 10 ? "Calm" : "Stable";
+
+  return { tempTrend, stormProb, windIntensity };
 }
 
 export default async function ClimatePage() {
   const climateData = await getClimateData();
 
-  // 1. Group latest snapshot per city (filtering out "global")
+  // 1. Group latest snapshot per city
   const latestCities = new Map<string, WeatherSnapshot>();
   climateData.forEach((row) => {
     if (row.location_id !== "global" && !latestCities.has(row.location_id)) {
@@ -88,6 +182,8 @@ export default async function ClimatePage() {
   let coldest = { city: "N/A", val: 999 };
   let windiest = { city: "N/A", val: -1 };
   let mostHumid = { city: "N/A", val: -1 };
+  let highestUV = { city: "N/A", val: -1 };
+  let rainiest = { city: "N/A", val: "" };
 
   cityRecords.forEach((r) => {
     const t = Number(r.temperature);
@@ -98,17 +194,25 @@ export default async function ClimatePage() {
     const w = Number(r.wind_speed);
     if (!isNaN(w) && w > windiest.val)
       windiest = { city: r.location_id, val: w };
-
     const h = Number(r.humidity);
     if (!isNaN(h) && h > mostHumid.val)
       mostHumid = { city: r.location_id, val: h };
+    const uv = Number(r.uvi);
+    if (!isNaN(uv) && uv > highestUV.val)
+      highestUV = { city: r.location_id, val: uv };
+    if (
+      r.weather_type?.toLowerCase().includes("rain") ||
+      r.condition?.toLowerCase().includes("rain")
+    ) {
+      rainiest = { city: r.location_id, val: r.condition || r.weather_type };
+    }
   });
 
-  // Handle empty database smoothly
   if (hottest.val === -999) hottest.val = 0;
   if (coldest.val === 999) coldest.val = 0;
   if (windiest.val === -1) windiest.val = 0;
   if (mostHumid.val === -1) mostHumid.val = 0;
+  if (highestUV.val === -1) highestUV.val = 0;
 
   // 3. Global Stats
   let latestGlobal = climateData.find((r) => r.location_id === "global");
@@ -116,13 +220,17 @@ export default async function ClimatePage() {
     let tSum = 0,
       hSum = 0,
       wSum = 0,
+      pSum = 0,
+      uvSum = 0,
       count = 0;
     cityRecords.forEach((r) => {
       const t = Number(r.temperature);
       if (!isNaN(t)) {
         tSum += t;
-        hSum += Number(r.humidity);
-        wSum += Number(r.wind_speed);
+        hSum += Number(r.humidity) || 0;
+        wSum += Number(r.wind_speed) || 0;
+        pSum += Number(r.pressure) || 0;
+        uvSum += Number(r.uvi) || 0;
         count++;
       }
     });
@@ -134,8 +242,8 @@ export default async function ClimatePage() {
         temperature: (tSum / count).toFixed(1),
         humidity: Math.round(hSum / count),
         wind_speed: (wSum / count).toFixed(1),
-        pressure: "--",
-        uvi: "--",
+        pressure: pSum > 0 ? Math.round(pSum / count) : "--",
+        uvi: uvSum > 0 ? (uvSum / count).toFixed(1) : "--",
         weather_type: "computed",
         condition: "Computed Average",
         source: "system",
@@ -168,12 +276,11 @@ export default async function ClimatePage() {
       }),
       temperature: Number(r.temperature),
     }))
-    .reverse(); // oldest to newest
+    .reverse();
 
   if (globalHistory.length > 0) {
     chartPoints = globalHistory;
   } else if (cityRecords.length > 0) {
-    // If no global history, just create a mock shape from cities for visualization
     chartPoints = cityRecords
       .map((c) => ({
         rawDate: new Date(c.timestamp),
@@ -187,15 +294,68 @@ export default async function ClimatePage() {
       .slice(0, 15);
   }
 
-  // 5. Automated Insight
+  // 5. Additional metrics
   const avgTemp = Number(latestGlobal.temperature);
-  const insightText = isNaN(avgTemp)
-    ? "Awaiting sensory data to generate predictive insights."
-    : generateInsight(chartPoints, avgTemp);
+  const avgWind = Number(latestGlobal.wind_speed) || 0;
+  const anomaly = !isNaN(avgTemp)
+    ? computeAnomaly(avgTemp)
+    : { value: 0, label: "--" };
+  const thermalRange = hottest.val - coldest.val;
+  const forecast = computeForecast(
+    chartPoints,
+    isNaN(avgTemp) ? 14 : avgTemp,
+    avgWind,
+  );
+
+  // Temperature distribution bins
+  const tempBins = {
+    below0: 0,
+    from0to10: 0,
+    from10to20: 0,
+    from20to30: 0,
+    above30: 0,
+  };
+  cityRecords.forEach((r) => {
+    const t = Number(r.temperature);
+    if (isNaN(t)) return;
+    if (t < 0) tempBins.below0++;
+    else if (t < 10) tempBins.from0to10++;
+    else if (t < 20) tempBins.from10to20++;
+    else if (t < 30) tempBins.from20to30++;
+    else tempBins.above30++;
+  });
+
+  // Rain probability approximated from weather types
+  const rainCount = cityRecords.filter(
+    (r) =>
+      r.weather_type?.toLowerCase().includes("rain") ||
+      r.condition?.toLowerCase().includes("rain") ||
+      r.weather_type?.toLowerCase().includes("drizzle"),
+  ).length;
+  const rainProbability =
+    cityRecords.length > 0
+      ? Math.round((rainCount / cityRecords.length) * 100)
+      : 0;
+
+  // 6. Insights
+  const insights = isNaN(avgTemp)
+    ? [
+        {
+          icon: "⏳",
+          text: "Awaiting sensory data to generate predictive insights.",
+          severity: "info" as const,
+        },
+      ]
+    : generateInsights(
+        chartPoints,
+        avgTemp,
+        { hottest, coldest, windiest, mostHumid },
+        thermalRange,
+      );
 
   return (
     <div className="flex-1 p-8 overflow-y-auto w-full">
-      <div className="max-w-6xl mx-auto space-y-10">
+      <div className="max-w-7xl mx-auto space-y-10">
         {/* Header Section */}
         <section className="space-y-4">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400">
@@ -216,81 +376,166 @@ export default async function ClimatePage() {
           </p>
         </section>
 
-        {/* AI Insight Bar */}
-        <div className="from-blue-950/40 to-indigo-950/40 border border-blue-900/50 rounded-2xl p-5 shadow-[0_0_30px_rgba(59,130,246,0.05)] backdrop-blur-xl flex items-start sm:items-center gap-4 animate-[fadeIn_0.5s_ease-out]">
-          <div className="p-3 bg-blue-500/10 rounded-xl">
-            <Bot className="w-6 h-6 text-blue-400" />
-          </div>
-          <div>
-            <span className="text-xs uppercase font-extrabold tracking-widest text-indigo-400 block mb-1">
-              Automated Insight
+        {/* AI Insights Bar */}
+        <section className="bg-slate-900/50 border border-blue-900/50 rounded-2xl p-5 backdrop-blur-xl">
+          <div className="flex items-center gap-2 mb-4">
+            <Bot className="w-5 h-5 text-blue-400" />
+            <span className="text-xs uppercase font-extrabold tracking-widest text-indigo-400">
+              Automated Insights
             </span>
-            <p className="text-slate-200 font-medium leading-relaxed">
-              {insightText}
-            </p>
           </div>
-        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {insights.map((insight, i) => {
+              const borderColor =
+                insight.severity === "critical"
+                  ? "border-red-500/30 bg-red-500/5"
+                  : insight.severity === "warning"
+                    ? "border-amber-500/30 bg-amber-500/5"
+                    : "border-blue-500/30 bg-blue-500/5";
+              return (
+                <div
+                  key={i}
+                  className={`flex items-start gap-3 p-3 rounded-xl border ${borderColor}`}
+                >
+                  <span className="text-lg mt-0.5">{insight.icon}</span>
+                  <p className="text-sm text-slate-200 font-medium leading-snug">
+                    {insight.text}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
 
         {/* Hero KPIs - Global Aggregate */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="relative group overflow-hidden rounded-3xl bg-slate-900/50 border border-slate-800 p-6 transition-all hover:bg-slate-800/80 hover:border-slate-700">
-            <div className="absolute inset-0 from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-orange-500/10 rounded-2xl text-orange-400">
-                <ThermometerSun className="w-6 h-6" />
-              </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <ClimateKPI
+            icon={<ThermometerSun className="w-6 h-6" />}
+            iconColor="text-orange-400"
+            iconBg="bg-orange-500/10"
+            label="Global Average"
+            value={`${latestGlobal.temperature}°C`}
+          />
+          <ClimateKPI
+            icon={<Droplets className="w-6 h-6" />}
+            iconColor="text-blue-400"
+            iconBg="bg-blue-500/10"
+            label="Mean Humidity"
+            value={`${latestGlobal.humidity}%`}
+          />
+          <ClimateKPI
+            icon={<Wind className="w-6 h-6" />}
+            iconColor="text-teal-400"
+            iconBg="bg-teal-500/10"
+            label="Avg Wind Speed"
+            value={`${latestGlobal.wind_speed} km/h`}
+          />
+          <ClimateKPI
+            icon={<Eye className="w-6 h-6" />}
+            iconColor="text-yellow-400"
+            iconBg="bg-yellow-500/10"
+            label="UV Index"
+            value={String(latestGlobal.uvi)}
+            sub={
+              Number(latestGlobal.uvi) > 6
+                ? "High exposure"
+                : Number(latestGlobal.uvi) > 3
+                  ? "Moderate"
+                  : "Low exposure"
+            }
+          />
+          <ClimateKPI
+            icon={<Gauge className="w-6 h-6" />}
+            iconColor="text-indigo-400"
+            iconBg="bg-indigo-500/10"
+            label="Mean Pressure"
+            value={`${latestGlobal.pressure} hPa`}
+          />
+          <ClimateKPI
+            icon={<CloudRain className="w-6 h-6" />}
+            iconColor="text-cyan-400"
+            iconBg="bg-cyan-500/10"
+            label="Rain Probability"
+            value={`${rainProbability}%`}
+          />
+        </div>
+
+        {/* Anomaly + Thermal Range + Forecast + Cities Tracked Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Climate Anomaly */}
+          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5 relative overflow-hidden group hover:border-orange-500/30 transition-colors">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-orange-500/5 rounded-full -translate-y-10 translate-x-10 blur-2xl" />
+            <span className="text-[10px] uppercase font-extrabold text-slate-500 tracking-widest block mb-3">
+              Temperature Anomaly
+            </span>
+            <div className="flex items-baseline gap-2">
+              <span
+                className={`text-4xl font-black tracking-tighter ${
+                  anomaly.value >= 0 ? "text-orange-400" : "text-cyan-400"
+                }`}
+              >
+                {anomaly.label}
+              </span>
             </div>
-            <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">
-              Global Average
-            </p>
-            <p className="text-4xl font-black text-white tracking-tighter">
-              {latestGlobal.temperature}°C
+            <p className="text-xs text-slate-500 mt-1 font-medium">
+              vs seasonal average (14°C)
             </p>
           </div>
 
-          <div className="relative group overflow-hidden rounded-3xl bg-slate-900/50 border border-slate-800 p-6 transition-all hover:bg-slate-800/80 hover:border-slate-700">
-            <div className="absolute inset-0 from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-blue-500/10 rounded-2xl text-blue-400">
-                <Droplets className="w-6 h-6" />
+          {/* Thermal Range */}
+          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5 relative overflow-hidden group hover:border-blue-500/30 transition-colors">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-blue-500/5 rounded-full -translate-y-10 translate-x-10 blur-2xl" />
+            <span className="text-[10px] uppercase font-extrabold text-slate-500 tracking-widest block mb-3">
+              <ArrowUpDown className="w-3 h-3 inline mr-1" />
+              Thermal Range
+            </span>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-400">Min</span>
+                <span className="font-bold text-cyan-400">{coldest.val}°C</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-400">Max</span>
+                <span className="font-bold text-orange-400">
+                  {hottest.val}°C
+                </span>
+              </div>
+              <div className="h-px bg-slate-700 my-1" />
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-400">Range</span>
+                <span className="font-extrabold text-white">
+                  {thermalRange.toFixed(1)}°C
+                </span>
               </div>
             </div>
-            <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">
-              Mean Humidity
-            </p>
-            <p className="text-4xl font-black text-white tracking-tighter">
-              {latestGlobal.humidity}%
-            </p>
           </div>
 
-          <div className="relative group overflow-hidden rounded-3xl bg-slate-900/50 border border-slate-800 p-6 transition-all hover:bg-slate-800/80 hover:border-slate-700">
-            <div className="absolute inset-0 from-teal-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-teal-500/10 rounded-2xl text-teal-400">
-                <Wind className="w-6 h-6" />
-              </div>
+          {/* Global Forecast */}
+          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5 relative overflow-hidden group hover:border-purple-500/30 transition-colors">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-purple-500/5 rounded-full -translate-y-10 translate-x-10 blur-2xl" />
+            <span className="text-[10px] uppercase font-extrabold text-slate-500 tracking-widest block mb-3">
+              <CloudSun className="w-3 h-3 inline mr-1" />
+              Forecast (Next 24h)
+            </span>
+            <div className="space-y-2">
+              <ForecastRow label="Temp Trend" value={forecast.tempTrend} />
+              <ForecastRow label="Storm Prob." value={forecast.stormProb} />
+              <ForecastRow label="Wind" value={forecast.windIntensity} />
             </div>
-            <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">
-              Avg Wind Speed
-            </p>
-            <p className="text-4xl font-black text-white tracking-tighter">
-              {latestGlobal.wind_speed}{" "}
-              <span className="text-xl text-slate-500 font-semibold">km/h</span>
-            </p>
           </div>
 
-          <div className="relative group overflow-hidden rounded-3xl bg-slate-900/50 border border-slate-800 p-6 transition-all hover:bg-slate-800/80 hover:border-slate-700">
-            <div className="absolute inset-0 from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-indigo-500/10 rounded-2xl text-indigo-400">
-                <MapPin className="w-6 h-6" />
-              </div>
-            </div>
-            <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">
-              Condition
+          {/* Tracked Cities */}
+          <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5 relative overflow-hidden group hover:border-indigo-500/30 transition-colors">
+            <div className="absolute top-0 right-0 w-20 h-20 bg-indigo-500/5 rounded-full -translate-y-10 translate-x-10 blur-2xl" />
+            <span className="text-[10px] uppercase font-extrabold text-slate-500 tracking-widest block mb-3">
+              <MapPin className="w-3 h-3 inline mr-1" />
+              Tracking Coverage
+            </span>
+            <p className="text-4xl font-black text-white tracking-tighter">
+              {cityRecords.length}
             </p>
-            <p className="text-3xl font-black text-white capitalize leading-tight">
-              {latestGlobal.condition}
+            <p className="text-xs text-slate-500 mt-1 font-medium">
+              Monitored cities worldwide
             </p>
           </div>
         </div>
@@ -303,7 +548,7 @@ export default async function ClimatePage() {
             <div className="flex justify-between items-center mb-6 relative z-10">
               <h2 className="text-xl font-bold flex items-center gap-2 text-white">
                 <TrendingUp className="w-5 h-5 text-blue-400" />
-                Global Temperature (24h)
+                Global Temperature Trend
               </h2>
             </div>
             <div className="h-[300px] w-full relative z-10">
@@ -311,94 +556,100 @@ export default async function ClimatePage() {
             </div>
           </section>
 
-          {/* Extremes (Comparisons) Sidebar */}
+          {/* Extremes Sidebar */}
           <section className="space-y-4">
             <h2 className="text-xl font-bold text-white px-2">
               Global Extremes
             </h2>
 
-            <div className="grid grid-cols-2 xl:grid-cols-1 gap-4">
-              {/* Hottest */}
-              <div className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4 flex items-center gap-4 hover:border-orange-500/30 transition-colors">
-                <div className="p-3 bg-orange-500/10 rounded-xl text-orange-500">
-                  <Sun className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
-                    Hottest City
-                  </p>
-                  <p className="text-lg font-black text-slate-200 truncate capitalize">
-                    {hottest.city}
-                  </p>
-                  <p className="text-orange-400 font-mono font-bold text-xl">
-                    {hottest.val}°C
-                  </p>
-                </div>
-              </div>
-
-              {/* Coldest */}
-              <div className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4 flex items-center gap-4 hover:border-cyan-500/30 transition-colors">
-                <div className="p-3 bg-cyan-500/10 rounded-xl text-cyan-400">
-                  <Snowflake className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
-                    Coldest City
-                  </p>
-                  <p className="text-lg font-black text-slate-200 truncate capitalize">
-                    {coldest.city}
-                  </p>
-                  <p className="text-cyan-400 font-mono font-bold text-xl">
-                    {coldest.val}°C
-                  </p>
-                </div>
-              </div>
-
-              {/* Windiest */}
-              <div className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4 flex items-center gap-4 hover:border-teal-500/30 transition-colors">
-                <div className="p-3 bg-teal-500/10 rounded-xl text-teal-400">
-                  <Navigation className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
-                    Windiest
-                  </p>
-                  <p className="text-lg font-black text-slate-200 truncate capitalize">
-                    {windiest.city}
-                  </p>
-                  <p className="text-teal-400 font-mono font-bold text-xl">
-                    {windiest.val} km/h
-                  </p>
-                </div>
-              </div>
-
-              {/* Most Humid */}
-              <div className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4 flex items-center gap-4 hover:border-blue-500/30 transition-colors">
-                <div className="p-3 bg-blue-500/10 rounded-xl text-blue-400">
-                  <Droplets className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
-                    Most Humid
-                  </p>
-                  <p className="text-lg font-black text-slate-200 truncate capitalize">
-                    {mostHumid.city}
-                  </p>
-                  <p className="text-blue-400 font-mono font-bold text-xl">
-                    {mostHumid.val}%
-                  </p>
-                </div>
-              </div>
+            <div className="grid grid-cols-2 xl:grid-cols-1 gap-3">
+              <ExtremeCard
+                icon={<Sun className="w-5 h-5" />}
+                iconBg="bg-orange-500/10"
+                iconColor="text-orange-500"
+                label="Hottest City"
+                city={hottest.city}
+                value={`${hottest.val}°C`}
+                valueColor="text-orange-400"
+                hoverBorder="hover:border-orange-500/30"
+              />
+              <ExtremeCard
+                icon={<Snowflake className="w-5 h-5" />}
+                iconBg="bg-cyan-500/10"
+                iconColor="text-cyan-400"
+                label="Coldest City"
+                city={coldest.city}
+                value={`${coldest.val}°C`}
+                valueColor="text-cyan-400"
+                hoverBorder="hover:border-cyan-500/30"
+              />
+              <ExtremeCard
+                icon={<Navigation className="w-5 h-5" />}
+                iconBg="bg-teal-500/10"
+                iconColor="text-teal-400"
+                label="Windiest"
+                city={windiest.city}
+                value={`${windiest.val} km/h`}
+                valueColor="text-teal-400"
+                hoverBorder="hover:border-teal-500/30"
+              />
+              <ExtremeCard
+                icon={<Droplets className="w-5 h-5" />}
+                iconBg="bg-blue-500/10"
+                iconColor="text-blue-400"
+                label="Most Humid"
+                city={mostHumid.city}
+                value={`${mostHumid.val}%`}
+                valueColor="text-blue-400"
+                hoverBorder="hover:border-blue-500/30"
+              />
+              <ExtremeCard
+                icon={<Eye className="w-5 h-5" />}
+                iconBg="bg-yellow-500/10"
+                iconColor="text-yellow-400"
+                label="Highest UV"
+                city={highestUV.city}
+                value={String(highestUV.val)}
+                valueColor="text-yellow-400"
+                hoverBorder="hover:border-yellow-500/30"
+              />
+              {rainiest.val && (
+                <ExtremeCard
+                  icon={<CloudRain className="w-5 h-5" />}
+                  iconBg="bg-cyan-500/10"
+                  iconColor="text-cyan-400"
+                  label="Rainiest"
+                  city={rainiest.city}
+                  value={String(rainiest.val)}
+                  valueColor="text-cyan-400"
+                  hoverBorder="hover:border-cyan-500/30"
+                />
+              )}
             </div>
           </section>
         </div>
 
-        {/* Data List for Reference */}
-        <section className="rounded-3xl border border-slate-800 bg-slate-900/30 backdrop-blur-xl overflow-hidden mt-8">
+        {/* Temperature Distribution */}
+        <section className="rounded-3xl border border-slate-800 bg-slate-900/40 p-6 relative overflow-hidden backdrop-blur-md">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full -translate-y-32 translate-x-32 blur-3xl" />
+          <h2 className="text-xl font-bold flex items-center gap-2 text-white mb-6 relative z-10">
+            <Thermometer className="w-5 h-5 text-indigo-400" />
+            Temperature Distribution
+          </h2>
+          <div className="h-[250px] w-full relative z-10">
+            <TemperatureDistribution bins={tempBins} />
+          </div>
+        </section>
+
+        {/* Data List (Recent Records Explorer) */}
+        <section className="rounded-3xl border border-slate-800 bg-slate-900/30 backdrop-blur-xl overflow-hidden">
           <div className="p-6 border-b border-slate-800/60 flex justify-between items-center">
             <h2 className="text-xl font-bold text-white">
               Recent Records Explorer
             </h2>
+            <span className="text-xs text-slate-500 font-medium">
+              Showing latest {Math.min(climateData.length, 50)} records
+            </span>
           </div>
           <div className="divide-y divide-slate-800/30 max-h-[400px] overflow-y-auto">
             {climateData && climateData.length > 0 ? (
@@ -444,6 +695,14 @@ export default async function ClimatePage() {
                         {record.humidity}%
                       </p>
                     </div>
+                    <div className="text-right">
+                      <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                        Wind
+                      </p>
+                      <p className="font-mono font-bold text-slate-200">
+                        {record.wind_speed} km/h
+                      </p>
+                    </div>
                   </div>
                 </div>
               ))
@@ -456,6 +715,91 @@ export default async function ClimatePage() {
           </div>
         </section>
       </div>
+    </div>
+  );
+}
+
+/* ──────────────────────── Sub-components ──────────────────────── */
+
+function ClimateKPI({
+  icon,
+  iconColor,
+  iconBg,
+  label,
+  value,
+  sub,
+}: {
+  icon: React.ReactNode;
+  iconColor: string;
+  iconBg: string;
+  label: string;
+  value: string;
+  sub?: string;
+}) {
+  return (
+    <div className="relative group overflow-hidden rounded-2xl bg-slate-900/50 border border-slate-800 p-5 transition-all hover:bg-slate-800/80 hover:border-slate-700">
+      <div className={`p-2.5 ${iconBg} rounded-xl ${iconColor} w-fit mb-3`}>
+        {icon}
+      </div>
+      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+        {label}
+      </p>
+      <p className="text-2xl font-black text-white tracking-tighter">{value}</p>
+      {sub && (
+        <p className="text-xs text-slate-500 mt-0.5 font-medium">{sub}</p>
+      )}
+    </div>
+  );
+}
+
+function ExtremeCard({
+  icon,
+  iconBg,
+  iconColor,
+  label,
+  city,
+  value,
+  valueColor,
+  hoverBorder,
+}: {
+  icon: React.ReactNode;
+  iconBg: string;
+  iconColor: string;
+  label: string;
+  city: string;
+  value: string;
+  valueColor: string;
+  hoverBorder: string;
+}) {
+  return (
+    <div
+      className={`bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4 flex items-center gap-4 ${hoverBorder} transition-colors`}
+    >
+      <div className={`p-2.5 ${iconBg} rounded-xl ${iconColor}`}>{icon}</div>
+      <div className="min-w-0">
+        <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+          {label}
+        </p>
+        <p className="text-sm font-black text-slate-200 truncate capitalize">
+          {city.replace(/_/g, " ")}
+        </p>
+        <p className={`${valueColor} font-mono font-bold text-lg`}>{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function ForecastRow({ label, value }: { label: string; value: string }) {
+  const color =
+    value === "Rising" || value === "High" || value === "Increasing"
+      ? "text-orange-400"
+      : value === "Falling" || value === "Low" || value === "Calm"
+        ? "text-emerald-400"
+        : "text-amber-400";
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <span className="text-slate-400">{label}</span>
+      <span className={`font-bold ${color}`}>{value}</span>
     </div>
   );
 }
