@@ -418,6 +418,59 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     }
   });
 
+  const cityCoords: Record<string, [number, number]> = {
+    "New_York": [40.7128, -74.0060],
+    "London": [51.5074, -0.1278],
+    "Tokyo": [35.6762, 139.6503],
+    "Paris": [48.8566, 2.3522],
+    "Sydney": [-33.8688, 151.2093],
+    "Dubai": [25.2048, 55.2708],
+    "Singapore": [1.3521, 103.8198],
+    "Hong_Kong": [22.3193, 114.1694],
+    "Berlin": [52.5200, 13.4050],
+    "Madrid": [40.4168, -3.7038],
+    "Rome": [41.9028, 12.4964],
+    "Moscow": [55.7558, 37.6173],
+    "Beijing": [39.9042, 116.4074],
+    "Shanghai": [31.2304, 121.4737],
+    "Cairo": [30.0444, 31.2357],
+    "Johannesburg": [-26.2041, 28.0473],
+    "Cape_Town": [-33.9249, 18.4241],
+    "Lagos": [6.5244, 3.3792],
+    "Nairobi": [-1.2921, 36.8219],
+    "Rio_de_Janeiro": [-22.9068, -43.1729],
+    "Sao_Paulo": [-23.5505, -46.6333],
+    "Buenos_Aires": [-34.6037, -58.3816],
+    "Santiago": [-33.4489, -70.6693],
+    "Lima": [-12.0464, -77.0428],
+    "Bogota": [4.7110, -74.0721],
+    "Mexico_City": [19.4326, -99.1332],
+    "Toronto": [43.6510, -79.3470],
+    "Vancouver": [49.2827, -123.1207],
+    "Los_Angeles": [34.0522, -118.2437],
+    "Chicago": [41.8781, -87.6298],
+    "Miami": [25.7617, -80.1918],
+    "Seoul": [37.5665, 126.9780],
+    "Mumbai": [19.0760, 72.8777],
+    "Delhi": [28.7041, 77.1025],
+    "Bangkok": [13.7563, 100.5018],
+    "Jakarta": [-6.2088, 106.8456],
+    "Manila": [14.5995, 120.9842],
+    "Kuala_Lumpur": [3.1390, 101.6869],
+    "Istanbul": [41.0082, 28.9784],
+    "Tehran": [35.6892, 51.3890],
+    "Riyadh": [24.7136, 46.6753],
+    "Stockholm": [59.3293, 18.0686],
+    "Oslo": [59.9139, 10.7522],
+    "Copenhagen": [55.6761, 12.5683],
+    "Amsterdam": [52.3676, 4.9041],
+    "Brussels": [50.8503, 4.3517],
+    "Vienna": [48.2082, 16.3738],
+    "Zurich": [47.3769, 8.5417],
+    "Athens": [37.9838, 23.7275],
+    "Lisbon": [38.7223, -9.1393],
+  };
+
   (
     weatherMapRes.rows as unknown as {
       location_id: string;
@@ -427,28 +480,35 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       weather_type: string;
     }[]
   ).forEach((row, i) => {
+    let lat: number | null = null;
+    let lon: number | null = null;
+
     if (row.location_id && row.location_id.includes(":")) {
       const parts = row.location_id.split(":");
-      const lat = parseFloat(parts[0]);
-      const lon = parseFloat(parts[1]);
-      if (parts.length === 2 && !isNaN(lat) && !isNaN(lon)) {
-        mapPoints.push({
-          id: `weather-${i}`,
-          type: "weather",
-          lat,
-          lon,
-          title: `${row.temperature}°C`,
-          description: row.weather_type || "Weather Update",
-          link: "/climate",
-          severity: "low",
-          source: "OpenWeather",
-          meta: {
-            temperature: row.temperature,
-            humidity: row.humidity,
-            wind: row.wind_speed,
-          },
-        });
-      }
+      lat = parseFloat(parts[0]);
+      lon = parseFloat(parts[1]);
+    } else if (row.location_id && cityCoords[row.location_id]) {
+      lat = cityCoords[row.location_id][0];
+      lon = cityCoords[row.location_id][1];
+    }
+
+    if (lat !== null && lon !== null && !isNaN(lat) && !isNaN(lon)) {
+      mapPoints.push({
+        id: `weather-${i}-${row.location_id}`,
+        type: "weather",
+        lat,
+        lon,
+        title: `${row.location_id.replace(/_/g, " ")}: ${row.temperature}°C`,
+        description: row.weather_type || "Weather Update",
+        link: "/climate",
+        severity: "low",
+        source: "OpenWeather",
+        meta: {
+          temperature: row.temperature,
+          humidity: row.humidity,
+          wind: row.wind_speed,
+        },
+      });
     }
   });
 
