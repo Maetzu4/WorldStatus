@@ -133,31 +133,36 @@ export default async function Home() {
                 </div>
                 <p className="text-slate-400 max-w-xl">
                   A high-level analytical metric aggregating real-time signals
-                  from disasters, climate anomalies, market volatility, and
-                  global sentiment.
+                  from disasters, climate anomalies, market volatility, global news,
+                  and space weather.
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
                 <SeverityBadge
                   label="Disasters"
                   level={stats.riskIndex.disaster}
-                  weight="30%"
+                  weight="25%"
                 />
                 <SeverityBadge
                   label="Climate"
                   level={stats.riskIndex.climate}
-                  weight="25%"
+                  weight="20%"
                 />
                 <SeverityBadge
                   label="Markets"
                   level={stats.riskIndex.market}
-                  weight="25%"
+                  weight="20%"
                 />
                 <SeverityBadge
                   label="News"
                   level={stats.riskIndex.news}
                   weight="20%"
+                />
+                <SeverityBadge
+                  label="Space"
+                  level={stats.riskIndex.space}
+                  weight="15%"
                 />
               </div>
             </div>

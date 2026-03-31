@@ -51,11 +51,13 @@ export interface GlobalRiskIndex {
   market: "low" | "medium" | "high";
   disaster: "low" | "medium" | "high";
   news: "low" | "medium" | "high";
+  space: "low" | "medium" | "high";
   weights: {
     disasters: number;
     climate: number;
     markets: number;
     news: number;
+    space: number;
   };
   trend: number; // delta vs previous period
   riskLevel: "Low" | "Moderate" | "High" | "Critical";
@@ -92,6 +94,7 @@ export interface DashboardStats {
   newsSentiment: { positive: number; negative: number };
   marketTrend: number;
   marketSentiment: { label: string; advancers: number; decliners: number };
+  spaceWeatherScore: number;
   astroEventsToday: string[];
   mapPoints: MapPoint[];
   riskIndex: GlobalRiskIndex;
@@ -286,6 +289,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     astroLatestRes,
     newsImpactRes,
     marketBreadthRes,
+    spaceRiskRes,
   ] = await Promise.all([
     safeQuery("SELECT COUNT(*) FROM news_articles"),
     safeQuery("SELECT COUNT(*) FROM disaster_events"),
@@ -337,6 +341,14 @@ export async function getDashboardStats(): Promise<DashboardStats> {
          FROM finance_indices
          ORDER BY index_name, timestamp DESC
        ) latest`,
+    ),
+    safeQuery(
+      `SELECT
+         SUM(CASE WHEN type = 'solar_flare' AND (intensity LIKE 'M%' OR intensity LIKE 'X%') THEN 1 ELSE 0 END) as severe_flares,
+         SUM(CASE WHEN type = 'geomagnetic_storm' AND intensity NOT IN ('G1') THEN 1 ELSE 0 END) as severe_storms,
+         SUM(CASE WHEN impact_level IN ('severe', 'extreme') THEN 1 ELSE 0 END) as severe_impacts
+       FROM astronomy_events
+       WHERE date > NOW() - INTERVAL '48 hours'`
     ),
   ]);
 
@@ -584,6 +596,19 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       severity: temperatureAnomaly > 2 ? "critical" : "warning",
     });
   }
+  
+  // Space weather data
+  const severeFlares = parseInt((spaceRiskRes.rows[0]?.severe_flares as string) || "0");
+  const severeStorms = parseInt((spaceRiskRes.rows[0]?.severe_storms as string) || "0");
+  const severeImpacts = parseInt((spaceRiskRes.rows[0]?.severe_impacts as string) || "0");
+  
+  if (severeFlares > 0 || severeStorms > 0) {
+    insights.push({
+      icon: "⚡",
+      text: `Elevated space weather: ${severeFlares} M/X-class flares and ${severeStorms} severe geomagnetic storms detected`,
+      severity: severeImpacts > 0 ? "critical" : "warning",
+    });
+  }
   // Market breadth data
   const advancers = parseInt((marketBreadthRes.rows[0]?.advancers as string) || "0");
   const decliners = parseInt((marketBreadthRes.rows[0]?.decliners as string) || "0");
@@ -679,12 +704,18 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   };
 
   // ── Risk Index ──────────────────────────────────────────────
+  // Space risk metrics
+  // Normalize space events to a 0-10 severity scale
+  let spaceRiskMetric = (severeFlares * 2) + (severeStorms * 3) + (severeImpacts * 5);
+  spaceRiskMetric = Math.min(10, spaceRiskMetric);
+
   const riskIndex = calculateRiskIndex(
     disasterCount,
     temperatureAnomaly,
     marketTrend,
     sentiment,
-    newsImpactScore
+    newsImpactScore,
+    spaceRiskMetric
   );
 
   const result: DashboardStats = {
@@ -717,6 +748,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     newsSentiment: sentiment,
     marketTrend,
     marketSentiment: { label: marketSentimentLabel, advancers, decliners },
+    spaceWeatherScore: 100 - (spaceRiskMetric * 10), // Convert metric to 0-100 index mapping
     astroEventsToday,
     mapPoints,
     riskIndex,
@@ -738,22 +770,23 @@ function calculateRiskIndex(
   tempAnomaly: number,
   marketTrend: number,
   sentiment: { positive: number; negative: number },
-  newsImpactScore: number = 0
+  newsImpactScore: number = 0,
+  spaceRiskMetric: number = 0
 ): GlobalRiskIndex {
-  // 1. Disaster Risk (30%)
-  const disasterScore = Math.max(0, 30 - disasterCount * 3);
+  // 1. Disaster Risk (25%)
+  const disasterScore = Math.max(0, 25 - disasterCount * 2.5);
   const disasterLevel: "low" | "medium" | "high" =
     disasterCount === 0 ? "low" : disasterCount < 5 ? "medium" : "high";
 
-  // 2. Climate Risk (25%)
+  // 2. Climate Risk (20%)
   const absAnomaly = Math.abs(tempAnomaly);
-  const climateScore = Math.max(0, 25 - absAnomaly * 12.5);
+  const climateScore = Math.max(0, 20 - absAnomaly * 10);
   const climateLevel: "low" | "medium" | "high" =
     absAnomaly < 0.5 ? "low" : absAnomaly < 1.5 ? "medium" : "high";
 
-  // 3. Market Risk (25%)
+  // 3. Market Risk (20%)
   const absMarket = Math.abs(marketTrend);
-  const marketScore = Math.max(0, 25 - absMarket * 5);
+  const marketScore = Math.max(0, 20 - absMarket * 4);
   const marketLevel: "low" | "medium" | "high" =
     absMarket < 1 ? "low" : absMarket < 3 ? "medium" : "high";
 
@@ -765,8 +798,14 @@ function calculateRiskIndex(
   const newsLevel: "low" | "medium" | "high" =
     newsImpactScore > 70 ? "high" : (newsImpactScore > 40 || sentiment.negative > 60) ? "medium" : "low";
 
+  // 5. Space Risk (15%)
+  // spaceRiskMetric is 0-10.
+  const spaceScore = Math.max(0, 15 - (spaceRiskMetric * 1.5));
+  const spaceLevel: "low" | "medium" | "high" =
+    spaceRiskMetric < 2 ? "low" : spaceRiskMetric < 5 ? "medium" : "high";
+
   const totalScore = Math.round(
-    disasterScore + climateScore + marketScore + newsScore,
+    disasterScore + climateScore + marketScore + newsScore + spaceScore,
   );
 
   const riskLevel: GlobalRiskIndex["riskLevel"] =
@@ -787,7 +826,8 @@ function calculateRiskIndex(
     market: marketLevel,
     disaster: disasterLevel,
     news: newsLevel,
-    weights: { disasters: 30, climate: 25, markets: 25, news: 20 },
+    space: spaceLevel,
+    weights: { disasters: 25, climate: 20, markets: 20, news: 20, space: 15 },
     trend,
     riskLevel,
   };

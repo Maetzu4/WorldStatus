@@ -67,10 +67,16 @@ CREATE INDEX IF NOT EXISTS idx_finance_name_ts ON finance_indices(index_name, ti
 CREATE TABLE IF NOT EXISTS astronomy_events (
     id SERIAL PRIMARY KEY,
     event VARCHAR(100) NOT NULL,
+    type VARCHAR(30),
+    intensity VARCHAR(20),
+    source VARCHAR(50),
+    impact_level VARCHAR(20),
     date TIMESTAMP WITH TIME ZONE,
     extra_info JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_astro_type_date ON astronomy_events(type, date DESC);
 
 CREATE TABLE IF NOT EXISTS disaster_events (
     id SERIAL PRIMARY KEY,
