@@ -232,7 +232,7 @@ export async function getTimelineData(
       if (isNaN(temp)) return;
       timeline.push({
         id: 100000 + i,
-        category: "finance",
+        category: "weather",
         title: `${row.location_id.replace(/_/g, " ")} — ${temp}°C, ${row.weather_type || "update"}`,
         timestamp: new Date(row.timestamp),
       });
