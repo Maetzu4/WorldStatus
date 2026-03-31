@@ -283,6 +283,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     newsLatestRes,
     marketLatestRes,
     astroLatestRes,
+    newsImpactRes,
   ] = await Promise.all([
     safeQuery("SELECT COUNT(*) FROM news_articles"),
     safeQuery("SELECT COUNT(*) FROM disaster_events"),
@@ -324,6 +325,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     safeQuery("SELECT MAX(published_at) as latest FROM news_articles"),
     safeQuery("SELECT MAX(timestamp) as latest FROM finance_indices"),
     safeQuery("SELECT MAX(date) as latest FROM astronomy_events"),
+    safeQuery("SELECT MAX(impact_score) as max_impact FROM news_events WHERE created_at > NOW() - INTERVAL '24 hours'"),
   ]);
 
   const totalNews = parseInt((newsCountRes.rows[0]?.count as string) || "0");
@@ -361,6 +363,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   );
   const totalArticles = parseInt(
     (totalArticlesRes.rows[0]?.count as string) || "0",
+  );
+  
+  const newsImpactScore = parseInt(
+    (newsImpactRes.rows[0]?.max_impact as string) || "0",
   );
 
   // ── Map Points ──────────────────────────────────────────────
@@ -653,6 +659,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     temperatureAnomaly,
     marketTrend,
     sentiment,
+    newsImpactScore
   );
 
   const result: DashboardStats = {
@@ -705,6 +712,7 @@ function calculateRiskIndex(
   tempAnomaly: number,
   marketTrend: number,
   sentiment: { positive: number; negative: number },
+  newsImpactScore: number = 0
 ): GlobalRiskIndex {
   // 1. Disaster Risk (30%)
   const disasterScore = Math.max(0, 30 - disasterCount * 3);
@@ -723,14 +731,13 @@ function calculateRiskIndex(
   const marketLevel: "low" | "medium" | "high" =
     absMarket < 1 ? "low" : absMarket < 3 ? "medium" : "high";
 
-  // 4. News Risk (20%)
-  const newsScore = (sentiment.positive / 100) * 20;
+  // 4. News Risk (20%) - Impact based + Sentiment
+  const baseNewsRisk = 20 - ((newsImpactScore / 100) * 15); // max 15 points lost due to raw impact
+  const sentimentBonus = (sentiment.positive / 100) * 5; // up to 5 points back for positive sentiment
+  const newsScore = Math.max(0, baseNewsRisk + sentimentBonus);
+  
   const newsLevel: "low" | "medium" | "high" =
-    sentiment.positive > 70
-      ? "low"
-      : sentiment.positive > 40
-        ? "medium"
-        : "high";
+    newsImpactScore > 70 ? "high" : (newsImpactScore > 40 || sentiment.negative > 60) ? "medium" : "low";
 
   const totalScore = Math.round(
     disasterScore + climateScore + marketScore + newsScore,

@@ -22,13 +22,32 @@ CREATE TABLE IF NOT EXISTS news_articles (
     url TEXT UNIQUE NOT NULL,
     image_url TEXT,
     published_at TIMESTAMP WITH TIME ZONE,
-    category VARCHAR(50) NOT NULL, -- 'general', 'clima', 'desastre', 'finanzas', 'astronomia'
+    category VARCHAR(50) NOT NULL,
     country VARCHAR(10),
     lat NUMERIC NULL,
     lon NUMERIC NULL,
-    severity INTEGER NULL, -- 0-5 for disasters
+    severity INTEGER NULL,
+    relevance_score INTEGER DEFAULT 0,
+    event_id INTEGER,
+    impact_score INTEGER DEFAULT 0,
+    sentiment_score NUMERIC DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS news_events (
+    id SERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    summary TEXT,
+    category VARCHAR(50),
+    sentiment_score NUMERIC DEFAULT 0,
+    impact_score INTEGER DEFAULT 0,
+    article_count INTEGER DEFAULT 1,
+    country VARCHAR(50),
+    lat NUMERIC NULL,
+    lon NUMERIC NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 
 CREATE INDEX IF NOT EXISTS idx_news_category ON news_articles(category);
 CREATE INDEX IF NOT EXISTS idx_news_published ON news_articles(published_at DESC);

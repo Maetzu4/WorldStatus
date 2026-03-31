@@ -37,8 +37,7 @@ export default async function Home() {
               World Status
             </h1>
             <p className="text-lg text-slate-300 max-w-3xl leading-relaxed">
-              The state of the world in the last 24 hours. Real-time monitoring
-              of{" "}
+              The state of the world. Real-time monitoring of{" "}
               <span className="text-blue-400 font-medium">global climate</span>,{" "}
               <span className="text-red-400 font-medium">
                 natural disasters
@@ -286,7 +285,7 @@ export default async function Home() {
               label="Last Update"
               value={new Date(stats.systemStatus.lastUpdate).toLocaleTimeString(
                 "en-US",
-                { hour: "2-digit", minute: "2-digit", timeZoneName: "short" }
+                { hour: "2-digit", minute: "2-digit", timeZoneName: "short" },
               )}
               icon={<Globe className="w-3.5 h-3.5 text-slate-400" />}
             />
@@ -326,9 +325,7 @@ export default async function Home() {
                   </span>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-slate-500">{val.delay}</span>
-                    <span
-                      className={`text-xs font-bold ${statusColor}`}
-                    >
+                    <span className={`text-xs font-bold ${statusColor}`}>
                       {val.status}
                     </span>
                   </div>
@@ -341,7 +338,10 @@ export default async function Home() {
 
       {/* Global Risk Level Bar */}
       <section>
-        <RiskLevelBar level={stats.riskIndex.riskLevel} score={stats.riskIndex.score} />
+        <RiskLevelBar
+          level={stats.riskIndex.riskLevel}
+          score={stats.riskIndex.score}
+        />
       </section>
 
       {/* Map Section */}
@@ -451,7 +451,12 @@ function MetricRow({
 function CalculationTooltip({
   weights,
 }: {
-  weights: { disasters: number; climate: number; markets: number; news: number };
+  weights: {
+    disasters: number;
+    climate: number;
+    markets: number;
+    news: number;
+  };
 }) {
   return (
     <div className="group relative">
