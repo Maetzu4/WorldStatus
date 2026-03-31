@@ -91,6 +91,7 @@ export interface DashboardStats {
   temperatureAnomaly: number;
   newsSentiment: { positive: number; negative: number };
   marketTrend: number;
+  marketSentiment: { label: string; advancers: number; decliners: number };
   astroEventsToday: string[];
   mapPoints: MapPoint[];
   riskIndex: GlobalRiskIndex;
@@ -284,6 +285,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     marketLatestRes,
     astroLatestRes,
     newsImpactRes,
+    marketBreadthRes,
   ] = await Promise.all([
     safeQuery("SELECT COUNT(*) FROM news_articles"),
     safeQuery("SELECT COUNT(*) FROM disaster_events"),
@@ -326,6 +328,16 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     safeQuery("SELECT MAX(timestamp) as latest FROM finance_indices"),
     safeQuery("SELECT MAX(date) as latest FROM astronomy_events"),
     safeQuery("SELECT MAX(impact_score) as max_impact FROM news_events WHERE created_at > NOW() - INTERVAL '24 hours'"),
+    safeQuery(
+      `SELECT
+         SUM(CASE WHEN change > 0.01 THEN 1 ELSE 0 END) as advancers,
+         SUM(CASE WHEN change < -0.01 THEN 1 ELSE 0 END) as decliners
+       FROM (
+         SELECT DISTINCT ON (index_name) change
+         FROM finance_indices
+         ORDER BY index_name, timestamp DESC
+       ) latest`,
+    ),
   ]);
 
   const totalNews = parseInt((newsCountRes.rows[0]?.count as string) || "0");
@@ -572,11 +584,24 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       severity: temperatureAnomaly > 2 ? "critical" : "warning",
     });
   }
+  // Market breadth data
+  const advancers = parseInt((marketBreadthRes.rows[0]?.advancers as string) || "0");
+  const decliners = parseInt((marketBreadthRes.rows[0]?.decliners as string) || "0");
+  const totalIndices = advancers + decliners;
+  const marketSentimentLabel = totalIndices === 0 ? "Neutral" : advancers > decliners ? "Bullish" : advancers < decliners ? "Bearish" : "Neutral";
+
   if (Math.abs(marketTrend) > 2) {
     insights.push({
       icon: "📉",
-      text: `Markets show ${Math.abs(marketTrend) > 3 ? "high" : "mild"} volatility (${marketTrend > 0 ? "+" : ""}${marketTrend.toFixed(2)}% avg)`,
+      text: `Markets show ${Math.abs(marketTrend) > 3 ? "high" : "mild"} volatility (${marketTrend > 0 ? "+" : ""}${marketTrend.toFixed(2)}% avg) — ${marketSentimentLabel} sentiment`,
       severity: Math.abs(marketTrend) > 3 ? "critical" : "warning",
+    });
+  }
+  if (decliners > 0 && advancers === 0) {
+    insights.push({
+      icon: "🔴",
+      text: "All tracked market indices declining — broad selloff detected",
+      severity: "critical",
     });
   }
   if (sentiment.negative > 60) {
@@ -691,6 +716,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     temperatureAnomaly,
     newsSentiment: sentiment,
     marketTrend,
+    marketSentiment: { label: marketSentimentLabel, advancers, decliners },
     astroEventsToday,
     mapPoints,
     riskIndex,

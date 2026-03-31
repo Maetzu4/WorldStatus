@@ -6,12 +6,12 @@ const MARKETSTACK_API_KEY = process.env.MARKETSTACK_API_KEY;
 
 // ETFs that track major indices (free tier doesn't support .INDX symbols)
 const INDICES = [
-  { symbol: "SPY", name: "S&P 500" },
-  { symbol: "DIA", name: "Dow Jones" },
-  { symbol: "QQQ", name: "NASDAQ" },
-  { symbol: "EWJ", name: "Nikkei (EWJ)" },
-  { symbol: "EWU", name: "FTSE (EWU)" },
-  { symbol: "EWG", name: "DAX (EWG)" },
+  { symbol: "SPY", name: "S&P 500", region: "US" },
+  { symbol: "DIA", name: "Dow Jones", region: "US" },
+  { symbol: "QQQ", name: "NASDAQ", region: "US" },
+  { symbol: "EWJ", name: "Nikkei (EWJ)", region: "Asia" },
+  { symbol: "EWU", name: "FTSE (EWU)", region: "Europe" },
+  { symbol: "EWG", name: "DAX (EWG)", region: "Europe" },
 ];
 
 async function syncFinance() {
@@ -52,14 +52,14 @@ async function syncFinance() {
       await query(
         `
         INSERT INTO finance_indices (
-          index_name, value, change, timestamp, created_at
-        ) VALUES ($1, $2, $3, $4, NOW())
+          index_name, value, change, region, timestamp, created_at
+        ) VALUES ($1, $2, $3, $4, $5, NOW())
       `,
-        [index.name, latest.close, change, latest.date],
+        [index.name, latest.close, change, index.region, latest.date],
       );
 
       logger.info(
-        { index: index.name, value: latest.close, change },
+        { index: index.name, value: latest.close, change, region: index.region },
         "Finance index stored",
       );
     } catch (error) {

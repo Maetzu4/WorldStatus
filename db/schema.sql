@@ -57,9 +57,12 @@ CREATE TABLE IF NOT EXISTS finance_indices (
     index_name VARCHAR(50) NOT NULL,
     value NUMERIC NOT NULL,
     change NUMERIC,
+    region VARCHAR(20),
     timestamp TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE INDEX IF NOT EXISTS idx_finance_name_ts ON finance_indices(index_name, timestamp DESC);
 
 CREATE TABLE IF NOT EXISTS astronomy_events (
     id SERIAL PRIMARY KEY,
