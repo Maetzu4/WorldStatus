@@ -8,27 +8,27 @@ import { Globe } from "lucide-react";
 
 const CATEGORIES = [
   { id: "all", label: "All", emoji: "🌍" },
-  { id: "clima", label: "Climate", emoji: "🌡" },
-  { id: "desastre", label: "Disaster", emoji: "🌪" },
-  { id: "noticia", label: "News", emoji: "📰" },
-  { id: "finanzas", label: "Finance", emoji: "📈" },
-  { id: "astronomía", label: "Astronomy", emoji: "🌌" },
+  { id: "weather", label: "Weather", emoji: "🌡" },
+  { id: "disaster", label: "Disasters", emoji: "🌪" },
+  { id: "news", label: "News", emoji: "📰" },
+  { id: "finance", label: "Finance", emoji: "📈" },
+  { id: "astronomy", label: "Astronomy", emoji: "🌌" },
 ];
 
 const badgeColors: Record<string, string> = {
-  clima: "bg-blue-500/10 text-blue-400 border-blue-500/20",
-  desastre: "bg-red-500/10 text-red-400 border-red-500/20",
-  noticia: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-  finanzas: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
-  astronomía: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+  weather: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+  disaster: "bg-red-500/10 text-red-400 border-red-500/20",
+  news: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+  finance: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+  astronomy: "bg-purple-500/10 text-purple-400 border-purple-500/20",
 };
 
 const dotColors: Record<string, string> = {
-  clima: "group-hover:border-blue-400",
-  desastre: "group-hover:border-red-400",
-  noticia: "group-hover:border-emerald-400",
-  finanzas: "group-hover:border-yellow-400",
-  astronomía: "group-hover:border-purple-400",
+  weather: "group-hover:border-blue-400",
+  disaster: "group-hover:border-red-400",
+  news: "group-hover:border-emerald-400",
+  finance: "group-hover:border-yellow-400",
+  astronomy: "group-hover:border-purple-400",
 };
 
 export default function TimelineFilter({ data }: { data: TimelineEntry[] }) {
