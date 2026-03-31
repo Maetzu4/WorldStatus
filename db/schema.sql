@@ -49,3 +49,20 @@ CREATE TABLE IF NOT EXISTS astronomy_events (
     extra_info JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS disaster_events (
+    id SERIAL PRIMARY KEY,
+    title TEXT NOT NULL,
+    description TEXT,
+    type VARCHAR(50), -- Volcano, Hurricane, Flood, Wildfire, Earthquake, Other
+    severity VARCHAR(20), -- Low, Moderate, High, Critical
+    impact_score INTEGER DEFAULT 0, -- 0-100
+    location VARCHAR(100),
+    country VARCHAR(100),
+    latitude NUMERIC,
+    longitude NUMERIC,
+    source VARCHAR(100),
+    url TEXT UNIQUE,
+    published_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);

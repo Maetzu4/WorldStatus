@@ -3,7 +3,7 @@ import { getCache, setCache } from "./redis";
 
 export interface TimelineEntry {
   id: number;
-  category: "weather" | "disaster" | "news" | "markets" | "astronomy";
+  category: "weather" | "disaster" | "news" | "finance" | "astronomy";
   title: string;
   timestamp: Date;
   extra?: unknown;
@@ -111,7 +111,7 @@ export async function getTimelineData(
     general: "news",
     clima: "weather",
     desastre: "disaster",
-    finanzas: "markets",
+    finanzas: "finance",
     astronomia: "astronomy",
   };
 
@@ -130,13 +130,41 @@ export async function getTimelineData(
       timeline.push({
         id: row.id,
         category: (categoryMap[row.category] ||
-          "noticia") as TimelineEntry["category"],
+          "news") as TimelineEntry["category"],
         title: row.title,
         timestamp: new Date(row.published_at || row.created_at),
       });
     });
   } catch (error) {
     console.error("Timeline: Error fetching news:", error);
+  }
+
+  // --- Disasters (independent) ---
+  try {
+    const disasterRes = await query(
+      `SELECT id, title, published_at, created_at
+       FROM disaster_events
+       ORDER BY published_at DESC NULLS LAST LIMIT $1`,
+      [limit],
+    );
+
+    (
+      disasterRes.rows as unknown as {
+        id: number;
+        title: string;
+        published_at: string;
+        created_at: string;
+      }[]
+    ).forEach((row) => {
+      timeline.push({
+        id: row.id + 900000,
+        category: "disaster",
+        title: row.title,
+        timestamp: new Date(row.published_at || row.created_at),
+      });
+    });
+  } catch (error) {
+    console.error("Timeline: Error fetching disasters:", error);
   }
 
   // --- Finance (independent) ---
@@ -151,7 +179,7 @@ export async function getTimelineData(
       const changeVal = parseFloat(row.change);
       timeline.push({
         id: row.id,
-        category: "markets",
+        category: "finance",
         title: `${row.index_name} ${changeVal >= 0 ? "gained" : "lost"} ${Math.abs(changeVal).toFixed(2)}%`,
         timestamp: new Date(row.timestamp),
       });
@@ -204,7 +232,7 @@ export async function getTimelineData(
       if (isNaN(temp)) return;
       timeline.push({
         id: 100000 + i,
-        category: "weather",
+        category: "finance",
         title: `${row.location_id.replace(/_/g, " ")} — ${temp}°C, ${row.weather_type || "update"}`,
         timestamp: new Date(row.timestamp),
       });
@@ -257,7 +285,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     astroLatestRes,
   ] = await Promise.all([
     safeQuery("SELECT COUNT(*) FROM news_articles"),
-    safeQuery("SELECT COUNT(*) FROM news_articles WHERE category = 'desastre'"),
+    safeQuery("SELECT COUNT(*) FROM disaster_events"),
     safeQuery(
       "SELECT index_name, change FROM finance_indices ORDER BY ABS(change) DESC LIMIT 1",
     ),
@@ -292,9 +320,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     ),
     safeQuery("SELECT COUNT(*) FROM news_articles"),
     safeQuery("SELECT MAX(timestamp) as latest FROM weather_snapshots"),
-    safeQuery(
-      "SELECT MAX(published_at) as latest FROM news_articles WHERE category = 'desastre'",
-    ),
+    safeQuery("SELECT MAX(published_at) as latest FROM disaster_events"),
     safeQuery("SELECT MAX(published_at) as latest FROM news_articles"),
     safeQuery("SELECT MAX(timestamp) as latest FROM finance_indices"),
     safeQuery("SELECT MAX(date) as latest FROM astronomy_events"),
@@ -398,16 +424,16 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     }
 
     const type =
-      row.category === "desastre"
+      row.category === "disaster"
         ? "disaster"
-        : row.category === "clima"
+        : row.category === "weather"
           ? "weather"
           : "news";
 
     const severity: MapPoint["severity"] =
-      row.category === "desastre"
+      row.category === "disaster"
         ? "high"
-        : row.category === "clima"
+        : row.category === "weather"
           ? "medium"
           : "low";
 
